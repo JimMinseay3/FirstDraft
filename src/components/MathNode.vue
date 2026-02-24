@@ -1,12 +1,17 @@
 <template>
   <node-view-wrapper class="math-node is-numbered" ref="nodeRoot">
-    <div 
-      class="math-preview" 
-      v-html="rendered" 
-      :class="{ 'has-error': !!error, 'is-empty': !src }" 
-      @click="startEditing"
-      title="Click to edit formula"
-    ></div>
+    <div class="math-container-outer">
+      <div 
+        class="math-preview" 
+        v-html="rendered" 
+        :class="{ 'has-error': !!error, 'is-empty': !src }" 
+        @click="startEditing"
+        title="Click to edit formula"
+      ></div>
+      <button class="math-delete-btn" @click.stop="deleteNode" title="Delete Formula">
+        <Trash2 :size="14" stroke-width="2" />
+      </button>
+    </div>
     <div v-show="isEditing || error" class="math-editor-container">
         <!-- Autocomplete Dropdown -->
         <div 
@@ -118,9 +123,25 @@
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
 import { computed, ref, nextTick, watch } from 'vue'
 import katex from 'katex'
+import { Trash2 } from 'lucide-vue-next'
 import 'katex/dist/katex.min.css'
 
 const props = defineProps(nodeViewProps)
+
+const deleteNode = () => {
+    const { state, dispatch } = props.editor.view
+    const { tr } = state
+    const pos = props.getPos()
+    
+    // Delete the current node and insert an empty paragraph
+    tr.replaceWith(pos, pos + props.node.nodeSize, state.schema.nodes.paragraph.create())
+    dispatch(tr)
+    
+    // Focus the new paragraph
+    nextTick(() => {
+        props.editor.commands.focus(pos + 1)
+    })
+}
 
 const src = ref(props.node.attrs.src || '')
 const isEditing = ref(false)
@@ -639,10 +660,19 @@ const suggestionStyle = computed(() => {
     flex-direction: column;
     align-items: center;
     page-break-inside: avoid;
+    position: relative;
+}
+
+.math-container-outer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    group: hover;
 }
 
 .math-preview {
-    width: 100%;
+    flex: 1;
     text-align: center;
     padding: 0.5rem;
     border-radius: 4px;
@@ -652,6 +682,34 @@ const suggestionStyle = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.math-delete-btn {
+    position: absolute;
+    right: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #9ca3af;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.math-container-outer:hover .math-delete-btn {
+    opacity: 1;
+}
+
+.math-delete-btn:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
 }
 
 .math-preview:hover {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { getBlockText } from '../lib/utils'
 import type { Block } from '../types/paper'
 import { ChevronDown, ChevronRight, PlusSquare, MinusSquare } from 'lucide-vue-next'
 
@@ -247,7 +248,7 @@ const updateInfo = () => {
               />
             </div>
             
-            <span class="truncate">{{ block.content || t('sidebar.untitled') }}</span>
+            <span class="truncate">{{ getBlockText(block) || t('sidebar.untitled') }}</span>
           </li>
         </ul>
       </div>

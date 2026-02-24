@@ -16,8 +16,9 @@
     "help": "Help(H)",
     "open": "Open File...",
     "save": "Save File",
+    "saveAs": "Save As...",
     "importWord": "Import Word",
-    "exportDocx": "Export to Word",
+    "exportDocx": "Export Word",
     "exit": "Exit",
     "assistant": "Toggle Assistant"
   },
@@ -103,7 +104,21 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark (Coming Soon)",
-    "about": "About"
+    "shortcuts": "Shortcuts",
+    "about": "About",
+    "save": "Save File",
+    "saveAs": "Save As",
+    "undo": "Undo",
+    "redo": "Redo",
+    "bold": "Bold",
+    "italic": "Italic",
+    "commandPalette": "Command Palette",
+    "mathBlock": "Insert Formula",
+    "search": "Global Search",
+    "selectAll": "Select Current Block",
+    "center": "Center Align",
+    "devtools": "DevTools",
+    "preview": "PDF Preview"
   },
   "typography": {
     "title": "Typography",

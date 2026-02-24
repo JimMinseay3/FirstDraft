@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Search, FileText, Heading, Image, List, Code, Quote, Table } from 'lucide-vue-next'
+import { getBlockText } from '../lib/utils'
 import type { Block } from '../types/paper'
 
 const props = defineProps<{
@@ -18,27 +19,6 @@ interface SearchResult {
   type: string
   text: string
   matches: { start: number; end: number }[]
-}
-
-const getBlockText = (block: any): string => {
-  // 1. Simple string content
-  if (typeof block.content === 'string') {
-    return block.content
-  }
-  
-  // 2. TipTap Text Node (leaf node)
-  if (block.type === 'text' && typeof block.text === 'string') {
-    return block.text
-  }
-
-  // 3. Nested content (Block[] or TipTap content array)
-  if (Array.isArray(block.content)) {
-    // For rich text (TipTap nodes), we join without spaces because they are parts of the same paragraph
-    // For nested blocks (if any), it might need spaces, but usually our structure is flat-ish for text.
-    return block.content.map((b: any) => getBlockText(b)).join('')
-  }
-  
-  return ''
 }
 
 const flattenBlocks = (blocks: Block[]): { id: string; type: string; text: string }[] => {

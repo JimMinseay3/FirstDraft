@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Settings } from 'lucide-vue-next'
 
 const { t, locale } = useI18n()
@@ -10,6 +10,23 @@ const { t, locale } = useI18n()
 // For now, I'll remove the unused prop to be clean.
 
 const currentLanguage = ref(locale.value)
+
+const shortcuts = computed(() => [
+  { name: t('menu.open'), key: 'Ctrl + O' },
+  { name: t('settings.save'), key: 'Ctrl + S' },
+  { name: t('settings.saveAs'), key: 'Ctrl + Shift + S' },
+  { name: t('settings.undo'), key: 'Ctrl + Z' },
+  { name: t('settings.redo'), key: 'Ctrl + Y' },
+  { name: t('settings.bold'), key: 'Ctrl + B' },
+  { name: t('settings.italic'), key: 'Ctrl + I' },
+  { name: t('settings.commandPalette'), key: 'Ctrl + Shift + P' },
+  { name: t('settings.mathBlock'), key: 'Ctrl + Shift + K' },
+  { name: t('settings.search'), key: 'Ctrl + F' },
+  { name: t('settings.selectAll'), key: 'Ctrl + A' },
+  { name: t('settings.center'), key: 'Ctrl + E' },
+  { name: t('settings.preview'), key: 'Alt + P' },
+  { name: t('settings.devtools'), key: 'F12' },
+])
 
 watch(currentLanguage, (newLang) => {
   locale.value = newLang
@@ -37,6 +54,25 @@ watch(currentLanguage, (newLang) => {
           <option value="zh">中文 (Chinese)</option>
           <option value="en">English</option>
         </select>
+      </div>
+
+      <!-- Shortcuts -->
+      <div class="pt-6 border-t border-gray-200">
+        <h3 class="text-sm font-medium text-gray-900 mb-4">{{ t('settings.shortcuts') }}</h3>
+        <div class="space-y-3">
+          <div v-for="s in shortcuts" :key="s.name" class="flex items-center justify-between">
+            <span class="text-xs text-gray-600">{{ s.name }}</span>
+            <div class="flex gap-1">
+              <kbd 
+                v-for="k in s.key.split(' + ')" 
+                :key="k"
+                class="px-1.5 py-0.5 text-[10px] font-sans font-semibold text-gray-600 bg-gray-50 border border-gray-300 rounded shadow-[0_1px_0_rgba(0,0,0,0.1)] min-w-[20px] text-center"
+              >
+                {{ k }}
+              </kbd>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- About -->

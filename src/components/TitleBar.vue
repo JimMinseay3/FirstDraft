@@ -8,10 +8,18 @@ const { t } = useI18n()
 
 const isMaximized = ref(false)
 const activeMenu = ref<string | null>(null)
+const searchInput = ref<HTMLInputElement | null>(null)
+
+const focusSearch = () => {
+  searchInput.value?.focus()
+}
+
+defineExpose({ focusSearch })
 
 const emit = defineEmits<{
   (e: 'open'): void
   (e: 'save'): void
+  (e: 'save-as'): void
   (e: 'import-word'): void
   (e: 'export-docx'): void
   (e: 'toggle-assistant'): void
@@ -42,9 +50,10 @@ const closeMenu = () => {
   activeMenu.value = null
 }
 
-const handleAction = (action: 'open' | 'save' | 'import-word' | 'export-docx') => {
+const handleAction = (action: 'open' | 'save' | 'save-as' | 'import-word' | 'export-docx') => {
   if (action === 'open') emit('open')
   else if (action === 'save') emit('save')
+  else if (action === 'save-as') emit('save-as')
   else if (action === 'import-word') emit('import-word')
   else if (action === 'export-docx') emit('export-docx')
   closeMenu()
@@ -121,6 +130,13 @@ onUnmounted(() => {
               <span>{{ t('menu.save') }}</span>
               <span class="text-gray-500 text-[10px] group-hover:text-gray-300">Ctrl+S</span>
             </div>
+            <div 
+              @click="handleAction('save-as')" 
+              class="px-4 py-1.5 hover:bg-blue-600 cursor-pointer flex justify-between items-center group"
+            >
+              <span>{{ t('menu.saveAs') }}</span>
+              <span class="text-gray-500 text-[10px] group-hover:text-gray-300">Ctrl+Shift+S</span>
+            </div>
             <div class="my-1 border-t border-gray-700"></div>
             <div 
               @click="close" 
@@ -148,6 +164,7 @@ onUnmounted(() => {
           </svg>
         </div>
         <input 
+          ref="searchInput"
           type="text" 
           :placeholder="t('titleBar.searchPlaceholder')"
           class="w-full bg-gray-800 border border-gray-700 rounded-md py-0.5 pl-8 pr-3 text-[11px] text-gray-300 focus:outline-none focus:bg-gray-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder-gray-600"

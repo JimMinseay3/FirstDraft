@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ipcRenderer } from 'electron'
 import TitleBar from './components/TitleBar.vue'
 import ActivityBar from './components/ActivityBar.vue'
@@ -13,7 +14,10 @@ import TypographySidebar from './components/TypographySidebar.vue'
 import Editor from './components/Editor.vue'
 import CommentList from './components/CommentList.vue'
 import Preview from './components/Preview.vue'
+import Toast from './components/Toast.vue'
 import type { PaperData, Reference } from './types/paper'
+
+const { t } = useI18n()
 
 // Initial State
 const paperData = ref<PaperData>({
@@ -32,6 +36,7 @@ const pdfUrl = ref<string | null>(null)
 const previewPdfUrl = ref<string | null>(null)
 const isRendering = ref(false)
 const editorRef = ref<any>(null)
+const titleBarRef = ref<any>(null)
 const activeView = ref('file')
 const showAssistant = ref(true)
 const isMathReferenceActive = ref(false)
@@ -39,6 +44,26 @@ const documentComments = ref<any[]>([])
 const showWelcome = ref(true)
 const isDirty = ref(false)
 const isEditorReadonly = ref(false)
+const isSaving = ref(false)
+
+// Toast State
+const toast = ref<{
+  show: boolean
+  message: string
+  type: 'success' | 'error' | 'info' | 'warning'
+}>({
+  show: false,
+  message: '',
+  type: 'info'
+})
+
+const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+  toast.value = {
+    show: true,
+    message,
+    type
+  }
+}
 
 // Global Styles State
 const globalStyles = ref({
@@ -102,6 +127,40 @@ const dynamicStyles = computed(() => `
 
 // Handle Math Reference Events
 onMounted(() => {
+  // Global Shortcuts
+  window.addEventListener('keydown', (e) => {
+    // Ctrl + S: Save
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault()
+      if (e.shiftKey) {
+        saveProject(true) // Ctrl + Shift + S: Save As
+      } else {
+        saveProject() // Ctrl + S: Save
+      }
+    }
+    // Ctrl + O: Open
+    if (e.ctrlKey && e.key === 'o') {
+      e.preventDefault()
+      loadProject()
+    }
+    // Ctrl + F: Search
+    if (e.ctrlKey && e.key === 'f') {
+      e.preventDefault()
+      activeView.value = 'search'
+      showAssistant.value = true
+    }
+    // Alt + P: Toggle Preview
+    if (e.altKey && e.key === 'p') {
+      e.preventDefault()
+      openPreviewWindow()
+    }
+    // Ctrl + Shift + P: Command Palette
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault()
+      titleBarRef.value?.focusSearch()
+    }
+  })
+
   window.addEventListener('math-reference-opened', () => {
     showAssistant.value = true
     isMathReferenceActive.value = true
@@ -231,14 +290,19 @@ const importWord = async () => {
   }
 }
 
-const saveProject = async () => {
+const saveProject = async (forceSaveAs: boolean = false) => {
+  if (isSaving.value) return
+  isSaving.value = true
+  
   try {
     // Deep clone to remove Vue reactivity proxies
     const dataClone = JSON.parse(JSON.stringify(paperData.value))
     const assetsClone = JSON.parse(JSON.stringify(assets.value))
 
+    console.log('[App] Saving project, current path:', currentFilePath.value, 'forceSaveAs:', forceSaveAs)
+    
     const result = await ipcRenderer.invoke('save-paper', {
-      filePath: currentFilePath.value,
+      filePath: forceSaveAs ? '' : currentFilePath.value,
       data: dataClone,
       assets: assetsClone
     })
@@ -246,10 +310,12 @@ const saveProject = async () => {
     if (result && result.success) {
       currentFilePath.value = result.filePath
       isDirty.value = false
-      alert('Saved successfully!')
+      showToast(t('settings.save'), 'success')
     }
   } catch (e: any) {
-    alert('Failed to save: ' + e.message)
+    showToast(t('settings.save') + ' failed: ' + e.message, 'error')
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -405,8 +471,10 @@ onMounted(() => {
   <div class="h-screen flex flex-col bg-white overflow-hidden text-gray-900 dark:text-gray-100">
     <component :is="'style'">{{ dynamicStyles }}</component>
     <TitleBar 
+      ref="titleBarRef"
       @open="loadProject"
-      @save="saveProject"
+      @save="saveProject(false)"
+      @save-as="saveProject(true)"
       @import-word="importWord"
       @export-docx="exportDocx"
       @toggle-assistant="showAssistant = !showAssistant"
@@ -419,6 +487,7 @@ onMounted(() => {
         <ActivityBar 
           :active-view="activeView"
           :show-preview="activeView === 'preview'"
+          :is-file-loaded="!showWelcome"
           @toggle-preview="openPreviewWindow" 
           @change-view="changeView"
         />
@@ -534,6 +603,14 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Global Components -->
+    <Toast 
+      v-if="toast.show" 
+      :message="toast.message" 
+      :type="toast.type" 
+      @close="toast.show = false" 
+    />
   </div>
 </template>
 
