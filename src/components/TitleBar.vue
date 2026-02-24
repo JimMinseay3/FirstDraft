@@ -78,7 +78,7 @@ onUnmounted(() => {
       <!-- App Icon & Title -->
       <div class="flex items-center space-x-2 mr-2">
         <div class="w-4 h-4 bg-blue-500 rounded-sm"></div>
-        <span class="text-xs font-medium text-gray-400">PaperDraft</span>
+        <span class="text-xs font-medium text-gray-400">FirstDraft</span>
       </div>
 
       <!-- Menu Bar -->

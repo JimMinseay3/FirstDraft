@@ -582,7 +582,7 @@ const scrollToBlock = (blockId: string, highlightText?: string) => {
         } else {
           // Fallback: Highlight entire block
           element.classList.remove('flash-highlight')
-          void element.offsetWidth // Trigger reflow
+          void (element as HTMLElement).offsetWidth // Trigger reflow
           element.classList.add('flash-highlight')
           
           // Remove class after animation

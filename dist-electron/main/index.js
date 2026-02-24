@@ -1,11 +1,7 @@
 "use strict";
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 const electron = require("electron");
 const require$$2$1 = require("os");
 const path = require("path");
-const require$$1$1 = require("url");
 const fs$2 = require("fs");
 const require$$0$1 = require("zlib");
 const require$$0$2 = require("crypto");
@@ -14,6 +10,7 @@ const require$$0$3 = require("stream");
 const require$$2 = require("events");
 const require$$0$4 = require("buffer");
 const require$$1 = require("util");
+const require$$1$1 = require("url");
 var commonjsGlobal$1 = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 function getDefaultExportFromCjs$2(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
@@ -2747,8 +2744,17 @@ class VersionManager {
       throw new Error(`Branch ${branchId} not found`);
     }
     graph.activeBranchId = branchId;
+    const headNodeId = graph.branches[branchId].headNodeId;
+    let data = void 0;
+    if (headNodeId && graph.nodes[headNodeId]) {
+      try {
+        data = this.loadNodeData(zip2, graph.nodes[headNodeId]);
+      } catch (e) {
+        console.error(`Failed to load data for branch HEAD ${headNodeId}:`, e);
+      }
+    }
     this.saveGraph(zip2, graph);
-    return true;
+    return { success: true, data };
   }
   static deleteSnapshot(zip2, snapshotId) {
     const graph = this.getGraph(zip2);
@@ -3003,7 +3009,6 @@ class PaperFileHandler {
 }
 class TypstRenderer {
   constructor(typstBinaryPath) {
-    __publicField(this, "typstPath");
     if (typstBinaryPath) {
       this.typstPath = typstBinaryPath;
     } else {
@@ -3175,7 +3180,7 @@ class TypstRenderer {
   }
 }
 var lib$6 = {};
-var VERSION = "1.13.7";
+var VERSION = "1.13.8";
 var root = typeof self == "object" && self.self === self && self || typeof global == "object" && global.global === global && global || Function("return this")() || {};
 var ArrayProto = Array.prototype, ObjProto = Object.prototype;
 var SymbolProto = typeof Symbol !== "undefined" ? Symbol.prototype : null;
@@ -3245,34 +3250,34 @@ const isRegExp$1 = tagTester("RegExp");
 const isError = tagTester("Error");
 const isSymbol = tagTester("Symbol");
 const isArrayBuffer = tagTester("ArrayBuffer");
-var isFunction = tagTester("Function");
+var isFunction$1 = tagTester("Function");
 var nodelist = root.document && root.document.childNodes;
 if (typeof /./ != "function" && typeof Int8Array != "object" && typeof nodelist != "function") {
-  isFunction = function(obj) {
+  isFunction$1 = function(obj) {
     return typeof obj == "function" || false;
   };
 }
-const isFunction$1 = isFunction;
+const isFunction = isFunction$1;
 const hasObjectTag = tagTester("Object");
 var hasDataViewBug = supportsDataView && (!/\[native code\]/.test(String(DataView)) || hasObjectTag(new DataView(new ArrayBuffer(8)))), isIE11 = typeof Map !== "undefined" && hasObjectTag(/* @__PURE__ */ new Map());
-var isDataView = tagTester("DataView");
+var isDataView$1 = tagTester("DataView");
 function alternateIsDataView(obj) {
-  return obj != null && isFunction$1(obj.getInt8) && isArrayBuffer(obj.buffer);
+  return obj != null && isFunction(obj.getInt8) && isArrayBuffer(obj.buffer);
 }
-const isDataView$1 = hasDataViewBug ? alternateIsDataView : isDataView;
+const isDataView = hasDataViewBug ? alternateIsDataView : isDataView$1;
 const isArray = nativeIsArray || tagTester("Array");
 function has$1(obj, key) {
   return obj != null && hasOwnProperty.call(obj, key);
 }
-var isArguments$1 = tagTester("Arguments");
+var isArguments$2 = tagTester("Arguments");
 (function() {
-  if (!isArguments$1(arguments)) {
-    isArguments$1 = function(obj) {
+  if (!isArguments$2(arguments)) {
+    isArguments$2 = function(obj) {
       return has$1(obj, "callee");
     };
   }
 })();
-const isArguments$2 = isArguments$1;
+const isArguments$1 = isArguments$2;
 function isFinite$1(obj) {
   return !isSymbol(obj) && _isFinite(obj) && !isNaN(parseFloat(obj));
 }
@@ -3298,10 +3303,10 @@ function shallowProperty(key) {
 const getByteLength = shallowProperty("byteLength");
 const isBufferLike = createSizePropertyCheck(getByteLength);
 var typedArrayPattern = /\[object ((I|Ui)nt(8|16|32)|Float(32|64)|Uint8Clamped|Big(I|Ui)nt64)Array\]/;
-function isTypedArray$1(obj) {
-  return nativeIsView ? nativeIsView(obj) && !isDataView$1(obj) : isBufferLike(obj) && typedArrayPattern.test(toString$2.call(obj));
+function isTypedArray$2(obj) {
+  return nativeIsView ? nativeIsView(obj) && !isDataView(obj) : isBufferLike(obj) && typedArrayPattern.test(toString$2.call(obj));
 }
-const isTypedArray$2 = supportsArrayBuffer ? isTypedArray$1 : constant(false);
+const isTypedArray$1 = supportsArrayBuffer ? isTypedArray$2 : constant(false);
 const getLength = shallowProperty("length");
 function emulatedSet(keys2) {
   var hash2 = {};
@@ -3320,7 +3325,7 @@ function collectNonEnumProps(obj, keys2) {
   keys2 = emulatedSet(keys2);
   var nonEnumIdx = nonEnumerableProps.length;
   var constructor = obj.constructor;
-  var proto = isFunction$1(constructor) && constructor.prototype || ObjProto;
+  var proto = isFunction(constructor) && constructor.prototype || ObjProto;
   var prop = "constructor";
   if (has$1(obj, prop) && !keys2.contains(prop)) keys2.push(prop);
   while (nonEnumIdx--) {
@@ -3341,7 +3346,7 @@ function keys(obj) {
 function isEmpty(obj) {
   if (obj == null) return true;
   var length = getLength(obj);
-  if (typeof length == "number" && (isArray(obj) || isString(obj) || isArguments$2(obj))) return length === 0;
+  if (typeof length == "number" && (isArray(obj) || isString(obj) || isArguments$1(obj))) return length === 0;
   return getLength(keys(obj)) === 0;
 }
 function isMatch(object2, attrs) {
@@ -3375,82 +3380,100 @@ function toBufferView(bufferSource) {
   );
 }
 var tagDataView = "[object DataView]";
-function eq(a, b, aStack, bStack) {
-  if (a === b) return a !== 0 || 1 / a === 1 / b;
-  if (a == null || b == null) return false;
-  if (a !== a) return b !== b;
-  var type2 = typeof a;
-  if (type2 !== "function" && type2 !== "object" && typeof b != "object") return false;
-  return deepEq(a, b, aStack, bStack);
-}
-function deepEq(a, b, aStack, bStack) {
-  if (a instanceof _$i) a = a._wrapped;
-  if (b instanceof _$i) b = b._wrapped;
-  var className = toString$2.call(a);
-  if (className !== toString$2.call(b)) return false;
-  if (hasDataViewBug && className == "[object Object]" && isDataView$1(a)) {
-    if (!isDataView$1(b)) return false;
-    className = tagDataView;
-  }
-  switch (className) {
-    case "[object RegExp]":
-    case "[object String]":
-      return "" + a === "" + b;
-    case "[object Number]":
-      if (+a !== +a) return +b !== +b;
-      return +a === 0 ? 1 / +a === 1 / b : +a === +b;
-    case "[object Date]":
-    case "[object Boolean]":
-      return +a === +b;
-    case "[object Symbol]":
-      return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);
-    case "[object ArrayBuffer]":
-    case tagDataView:
-      return deepEq(toBufferView(a), toBufferView(b), aStack, bStack);
-  }
-  var areArrays = className === "[object Array]";
-  if (!areArrays && isTypedArray$2(a)) {
-    var byteLength2 = getByteLength(a);
-    if (byteLength2 !== getByteLength(b)) return false;
-    if (a.buffer === b.buffer && a.byteOffset === b.byteOffset) return true;
-    areArrays = true;
-  }
-  if (!areArrays) {
-    if (typeof a != "object" || typeof b != "object") return false;
-    var aCtor = a.constructor, bCtor = b.constructor;
-    if (aCtor !== bCtor && !(isFunction$1(aCtor) && aCtor instanceof aCtor && isFunction$1(bCtor) && bCtor instanceof bCtor) && ("constructor" in a && "constructor" in b)) {
+function isEqual(a, b) {
+  var todo = [{ a, b }];
+  var aStack = [], bStack = [];
+  while (todo.length) {
+    var frame = todo.pop();
+    if (frame === true) {
+      aStack.pop();
+      bStack.pop();
+      continue;
+    }
+    a = frame.a;
+    b = frame.b;
+    if (a === b) {
+      if (a !== 0 || 1 / a === 1 / b) continue;
       return false;
     }
-  }
-  aStack = aStack || [];
-  bStack = bStack || [];
-  var length = aStack.length;
-  while (length--) {
-    if (aStack[length] === a) return bStack[length] === b;
-  }
-  aStack.push(a);
-  bStack.push(b);
-  if (areArrays) {
-    length = a.length;
-    if (length !== b.length) return false;
-    while (length--) {
-      if (!eq(a[length], b[length], aStack, bStack)) return false;
+    if (a == null || b == null) return false;
+    if (a !== a) {
+      if (b !== b) continue;
+      return false;
     }
-  } else {
-    var _keys = keys(a), key;
-    length = _keys.length;
-    if (keys(b).length !== length) return false;
+    var type2 = typeof a;
+    if (type2 !== "function" && type2 !== "object" && typeof b != "object") return false;
+    if (a instanceof _$i) a = a._wrapped;
+    if (b instanceof _$i) b = b._wrapped;
+    var className = toString$2.call(a);
+    if (className !== toString$2.call(b)) return false;
+    if (hasDataViewBug && className == "[object Object]" && isDataView(a)) {
+      if (!isDataView(b)) return false;
+      className = tagDataView;
+    }
+    switch (className) {
+      case "[object RegExp]":
+      case "[object String]":
+        if ("" + a === "" + b) continue;
+        return false;
+      case "[object Number]":
+        todo.push({ a: +a, b: +b });
+        continue;
+      case "[object Date]":
+      case "[object Boolean]":
+        if (+a === +b) continue;
+        return false;
+      case "[object Symbol]":
+        if (SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b)) continue;
+        return false;
+      case "[object ArrayBuffer]":
+      case tagDataView:
+        todo.push({ a: toBufferView(a), b: toBufferView(b) });
+        continue;
+    }
+    var areArrays = className === "[object Array]";
+    if (!areArrays && isTypedArray$1(a)) {
+      var byteLength2 = getByteLength(a);
+      if (byteLength2 !== getByteLength(b)) return false;
+      if (a.buffer === b.buffer && a.byteOffset === b.byteOffset) continue;
+      areArrays = true;
+    }
+    if (!areArrays) {
+      if (typeof a != "object" || typeof b != "object") return false;
+      var aCtor = a.constructor, bCtor = b.constructor;
+      if (aCtor !== bCtor && !(isFunction(aCtor) && aCtor instanceof aCtor && isFunction(bCtor) && bCtor instanceof bCtor) && ("constructor" in a && "constructor" in b)) {
+        return false;
+      }
+    }
+    var length = aStack.length;
     while (length--) {
-      key = _keys[length];
-      if (!(has$1(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
+      if (aStack[length] === a) {
+        if (bStack[length] === b) break;
+        return false;
+      }
+    }
+    if (length >= 0) continue;
+    aStack.push(a);
+    bStack.push(b);
+    todo.push(true);
+    if (areArrays) {
+      length = a.length;
+      if (length !== b.length) return false;
+      while (length--) {
+        todo.push({ a: a[length], b: b[length] });
+      }
+    } else {
+      var _keys = keys(a), key;
+      length = _keys.length;
+      if (keys(b).length !== length) return false;
+      while (length--) {
+        key = _keys[length];
+        if (!has$1(b, key)) return false;
+        todo.push({ a: a[key], b: b[key] });
+      }
     }
   }
-  aStack.pop();
-  bStack.pop();
   return true;
-}
-function isEqual(a, b) {
-  return eq(a, b);
 }
 function allKeys(obj) {
   if (!isObject(obj)) return [];
@@ -3466,9 +3489,9 @@ function ie11fingerprint(methods2) {
     var keys2 = allKeys(obj);
     if (getLength(keys2)) return false;
     for (var i = 0; i < length; i++) {
-      if (!isFunction$1(obj[methods2[i]])) return false;
+      if (!isFunction(obj[methods2[i]])) return false;
     }
-    return methods2 !== weakMapMethods || !isFunction$1(obj[forEachName]);
+    return methods2 !== weakMapMethods || !isFunction(obj[forEachName]);
   };
 }
 var forEachName = "forEach", hasName = "has", commonInit = ["clear", "delete"], mapTail = ["get", hasName, "set"];
@@ -3506,7 +3529,7 @@ function invert(obj) {
 function functions(obj) {
   var names = [];
   for (var key in obj) {
-    if (isFunction$1(obj[key])) names.push(key);
+    if (isFunction(obj[key])) names.push(key);
   }
   return names.sort();
 }
@@ -3620,7 +3643,7 @@ function optimizeCb(func, context2, argCount) {
 }
 function baseIteratee(value, context2, argCount) {
   if (value == null) return identity$2;
-  if (isFunction$1(value)) return optimizeCb(value, context2, argCount);
+  if (isFunction(value)) return optimizeCb(value, context2, argCount);
   if (isObject(value) && !isArray(value)) return matcher(value);
   return property(value);
 }
@@ -3757,7 +3780,7 @@ function result(obj, path2, fallback) {
   path2 = toPath(path2);
   var length = path2.length;
   if (!length) {
-    return isFunction$1(fallback) ? fallback.call(obj) : fallback;
+    return isFunction(fallback) ? fallback.call(obj) : fallback;
   }
   for (var i = 0; i < length; i++) {
     var prop = obj == null ? void 0 : obj[path2[i]];
@@ -3765,7 +3788,7 @@ function result(obj, path2, fallback) {
       prop = fallback;
       i = length;
     }
-    obj = isFunction$1(prop) ? prop.call(obj) : prop;
+    obj = isFunction(prop) ? prop.call(obj) : prop;
   }
   return obj;
 }
@@ -3801,31 +3824,33 @@ var partial = restArguments(function(func, boundArgs) {
 });
 partial.placeholder = _$i;
 const bind$1 = restArguments(function(func, context2, args) {
-  if (!isFunction$1(func)) throw new TypeError("Bind must be called on a function");
+  if (!isFunction(func)) throw new TypeError("Bind must be called on a function");
   var bound = restArguments(function(callArgs) {
     return executeBound(func, bound, context2, this, args.concat(callArgs));
   });
   return bound;
 });
 const isArrayLike = createSizePropertyCheck(getLength);
-function flatten$1(input, depth, strict, output) {
-  output = output || [];
-  if (!depth && depth !== 0) {
-    depth = Infinity;
-  } else if (depth <= 0) {
-    return output.concat(input);
-  }
-  var idx = output.length;
-  for (var i = 0, length = getLength(input); i < length; i++) {
-    var value = input[i];
-    if (isArrayLike(value) && (isArray(value) || isArguments$2(value))) {
-      if (depth > 1) {
-        flatten$1(value, depth - 1, strict, output);
-        idx = output.length;
-      } else {
-        var j = 0, len = value.length;
-        while (j < len) output[idx++] = value[j++];
-      }
+function flatten$1(input, depth, strict) {
+  if (!depth && depth !== 0) depth = Infinity;
+  var output = [], idx = 0, i = 0, length = getLength(input) || 0, stack = [];
+  while (true) {
+    if (i >= length) {
+      if (!stack.length) break;
+      var frame = stack.pop();
+      i = frame.i;
+      input = frame.v;
+      length = getLength(input);
+      continue;
+    }
+    var value = input[i++];
+    if (stack.length >= depth) {
+      output[idx++] = value;
+    } else if (isArrayLike(value) && (isArray(value) || isArguments$1(value))) {
+      stack.push({ i, v: input });
+      i = 0;
+      input = value;
+      length = getLength(input);
     } else if (!strict) {
       output[idx++] = value;
     }
@@ -4103,7 +4128,7 @@ function contains(obj, item, fromIndex, guard) {
 }
 const invoke = restArguments(function(obj, path2, args) {
   var contextPath, func;
-  if (isFunction$1(path2)) {
+  if (isFunction(path2)) {
     func = path2;
   } else {
     path2 = toPath(path2);
@@ -4256,7 +4281,7 @@ function keyInObj(value, key, obj) {
 const pick = restArguments(function(obj, keys2) {
   var result2 = {}, iteratee2 = keys2[0];
   if (obj == null) return result2;
-  if (isFunction$1(iteratee2)) {
+  if (isFunction(iteratee2)) {
     if (keys2.length > 1) iteratee2 = optimizeCb(iteratee2, keys2[1]);
     keys2 = allKeys(obj);
   } else {
@@ -4273,7 +4298,7 @@ const pick = restArguments(function(obj, keys2) {
 });
 const omit = restArguments(function(obj, keys2) {
   var iteratee2 = keys2[0], context2;
-  if (isFunction$1(iteratee2)) {
+  if (isFunction(iteratee2)) {
     iteratee2 = negate(iteratee2);
     if (keys2.length > 1) context2 = keys2[1];
   } else {
@@ -4496,18 +4521,18 @@ const allExports = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePr
   intersection,
   invert,
   invoke,
-  isArguments: isArguments$2,
+  isArguments: isArguments$1,
   isArray,
   isArrayBuffer,
   isBoolean,
-  isDataView: isDataView$1,
+  isDataView,
   isDate,
   isElement,
   isEmpty,
   isEqual,
   isError,
   isFinite: isFinite$1,
-  isFunction: isFunction$1,
+  isFunction,
   isMap,
   isMatch,
   isNaN: isNaN$1,
@@ -4518,7 +4543,7 @@ const allExports = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePr
   isSet,
   isString,
   isSymbol,
-  isTypedArray: isTypedArray$2,
+  isTypedArray: isTypedArray$1,
   isUndefined,
   isWeakMap,
   isWeakSet,
@@ -4647,18 +4672,18 @@ const indexAll = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProp
   intersection,
   invert,
   invoke,
-  isArguments: isArguments$2,
+  isArguments: isArguments$1,
   isArray,
   isArrayBuffer,
   isBoolean,
-  isDataView: isDataView$1,
+  isDataView,
   isDate,
   isElement,
   isEmpty,
   isEqual,
   isError,
   isFinite: isFinite$1,
-  isFunction: isFunction$1,
+  isFunction,
   isMap,
   isMatch,
   isNaN: isNaN$1,
@@ -4669,7 +4694,7 @@ const indexAll = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProp
   isSet,
   isString,
   isSymbol,
-  isTypedArray: isTypedArray$2,
+  isTypedArray: isTypedArray$1,
   isUndefined,
   isWeakMap,
   isWeakSet,
@@ -9090,8 +9115,8 @@ function requireAny() {
   };
   return any;
 }
-(function(module2) {
-  module2.exports = function() {
+(function(module) {
+  module.exports = function() {
     var makeSelfResolutionError = function() {
       return new TypeError2("circular promise resolution chain\n\n    See http://goo.gl/MqrFmX\n");
     };
@@ -9247,7 +9272,7 @@ function requireAny() {
     Promise2.prototype.error = function(fn) {
       return this.caught(util2.originatesFromRejection, fn);
     };
-    Promise2.getNewLibraryCopy = module2.exports;
+    Promise2.getNewLibraryCopy = module.exports;
     Promise2.is = function(val) {
       return val instanceof Promise2;
     };
@@ -10260,7 +10285,7 @@ var hasRequiredSafeBuffer$1;
 function requireSafeBuffer$1() {
   if (hasRequiredSafeBuffer$1) return safeBuffer$1.exports;
   hasRequiredSafeBuffer$1 = 1;
-  (function(module2, exports$1) {
+  (function(module, exports$1) {
     var buffer2 = require$$0$4;
     var Buffer2 = buffer2.Buffer;
     function copyProps(src, dst) {
@@ -10269,7 +10294,7 @@ function requireSafeBuffer$1() {
       }
     }
     if (Buffer2.from && Buffer2.alloc && Buffer2.allocUnsafe && Buffer2.allocUnsafeSlow) {
-      module2.exports = buffer2;
+      module.exports = buffer2;
     } else {
       copyProps(buffer2, exports$1);
       exports$1.Buffer = SafeBuffer;
@@ -10438,7 +10463,7 @@ var hasRequiredBufferList;
 function requireBufferList() {
   if (hasRequiredBufferList) return BufferList.exports;
   hasRequiredBufferList = 1;
-  (function(module2) {
+  (function(module) {
     function _classCallCheck(instance, Constructor) {
       if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -10449,7 +10474,7 @@ function requireBufferList() {
     function copyBuffer(src, target, offset) {
       src.copy(target, offset);
     }
-    module2.exports = function() {
+    module.exports = function() {
       function BufferList2() {
         _classCallCheck(this, BufferList2);
         this.head = null;
@@ -10505,7 +10530,7 @@ function requireBufferList() {
       return BufferList2;
     }();
     if (util2 && util2.inspect && util2.inspect.custom) {
-      module2.exports.prototype[util2.inspect.custom] = function() {
+      module.exports.prototype[util2.inspect.custom] = function() {
         var obj = util2.inspect({ length: this.length });
         return this.constructor.name + " " + obj;
       };
@@ -12151,11 +12176,11 @@ var hasRequiredReadable;
 function requireReadable() {
   if (hasRequiredReadable) return readable.exports;
   hasRequiredReadable = 1;
-  (function(module2, exports$1) {
+  (function(module, exports$1) {
     var Stream = require$$0$3;
     if (process.env.READABLE_STREAM === "disable" && Stream) {
-      module2.exports = Stream;
-      exports$1 = module2.exports = Stream.Readable;
+      module.exports = Stream;
+      exports$1 = module.exports = Stream.Readable;
       exports$1.Readable = Stream.Readable;
       exports$1.Writable = Stream.Writable;
       exports$1.Duplex = Stream.Duplex;
@@ -12163,7 +12188,7 @@ function requireReadable() {
       exports$1.PassThrough = Stream.PassThrough;
       exports$1.Stream = Stream;
     } else {
-      exports$1 = module2.exports = require_stream_readable$1();
+      exports$1 = module.exports = require_stream_readable$1();
       exports$1.Stream = Stream || exports$1;
       exports$1.Readable = exports$1;
       exports$1.Writable = require_stream_writable$1();
@@ -32155,8 +32180,37 @@ const defaultOptions$1 = {
   // skipEmptyListItem: false
   captureMetaData: false
 };
+function normalizeProcessEntities(value) {
+  if (typeof value === "boolean") {
+    return {
+      enabled: value,
+      // true or false
+      maxEntitySize: 1e4,
+      maxExpansionDepth: 10,
+      maxTotalExpansions: 1e3,
+      maxExpandedLength: 1e5,
+      allowedTags: null,
+      tagFilter: null
+    };
+  }
+  if (typeof value === "object" && value !== null) {
+    return {
+      enabled: value.enabled !== false,
+      // default true if not specified
+      maxEntitySize: value.maxEntitySize ?? 1e4,
+      maxExpansionDepth: value.maxExpansionDepth ?? 10,
+      maxTotalExpansions: value.maxTotalExpansions ?? 1e3,
+      maxExpandedLength: value.maxExpandedLength ?? 1e5,
+      allowedTags: value.allowedTags ?? null,
+      tagFilter: value.tagFilter ?? null
+    };
+  }
+  return normalizeProcessEntities(true);
+}
 const buildOptions = function(options) {
-  return Object.assign({}, defaultOptions$1, options);
+  const built = Object.assign({}, defaultOptions$1, options);
+  built.processEntities = normalizeProcessEntities(built.processEntities);
+  return built;
 };
 let METADATA_SYMBOL$1;
 if (typeof Symbol !== "function") {
@@ -32191,8 +32245,9 @@ class XmlNode {
   }
 }
 class DocTypeReader {
-  constructor(processEntities) {
-    this.suppressValidationErr = !processEntities;
+  constructor(options) {
+    this.suppressValidationErr = !options;
+    this.options = options;
   }
   readDocType(xmlData, i) {
     const entities2 = {};
@@ -32207,11 +32262,13 @@ class DocTypeReader {
             i += 7;
             let entityName, val;
             [entityName, val, i] = this.readEntityExp(xmlData, i + 1, this.suppressValidationErr);
-            if (val.indexOf("&") === -1)
+            if (val.indexOf("&") === -1) {
+              const escaped = entityName.replace(/[.\-+*:]/g, "\\.");
               entities2[entityName] = {
-                regx: RegExp(`&${entityName};`, "g"),
+                regx: RegExp(`&${escaped};`, "g"),
                 val
               };
+            }
           } else if (hasBody && hasSeq(xmlData, "!ELEMENT", i)) {
             i += 8;
             const { index } = this.readElementExp(xmlData, i + 1);
@@ -32270,6 +32327,11 @@ class DocTypeReader {
     }
     let entityValue = "";
     [i, entityValue] = this.readIdentifierVal(xmlData, i, "entity");
+    if (this.options.enabled !== false && this.options.maxEntitySize && entityValue.length > this.options.maxEntitySize) {
+      throw new Error(
+        `Entity "${entityName}" size (${entityValue.length}) exceeds maximum allowed size (${this.options.maxEntitySize})`
+      );
+    }
     i--;
     return [entityName, entityValue, i];
   }
@@ -32605,6 +32667,8 @@ class OrderedObjParser {
     this.saveTextToParentTag = saveTextToParentTag;
     this.addChild = addChild;
     this.ignoreAttributesFn = getIgnoreAttributesFn(this.options.ignoreAttributes);
+    this.entityExpansionCount = 0;
+    this.currentExpandedLength = 0;
     if (this.options.stopNodes && this.options.stopNodes.length > 0) {
       this.stopNodesExact = /* @__PURE__ */ new Set();
       this.stopNodesWildcard = /* @__PURE__ */ new Set();
@@ -32624,8 +32688,9 @@ function addExternalEntities(externalEntities) {
   const entKeys = Object.keys(externalEntities);
   for (let i = 0; i < entKeys.length; i++) {
     const ent = entKeys[i];
+    const escaped = ent.replace(/[.\-+*:]/g, "\\.");
     this.lastEntities[ent] = {
-      regex: new RegExp("&" + ent + ";", "g"),
+      regex: new RegExp("&" + escaped + ";", "g"),
       val: externalEntities[ent]
     };
   }
@@ -32636,7 +32701,7 @@ function parseTextData(val, tagName, jPath, dontTrim, hasAttributes, isLeafNode,
       val = val.trim();
     }
     if (val.length > 0) {
-      if (!escapeEntities) val = this.replaceEntitiesValue(val);
+      if (!escapeEntities) val = this.replaceEntitiesValue(val, tagName, jPath);
       const newval = this.options.tagValueProcessor(tagName, val, jPath, hasAttributes, isLeafNode);
       if (newval === null || newval === void 0) {
         return val;
@@ -32669,7 +32734,7 @@ function resolveNameSpace(tagname) {
   return tagname;
 }
 const attrsRegx = new RegExp(`([^\\s=]+)\\s*(=\\s*(['"])([\\s\\S]*?)\\3)?`, "gm");
-function buildAttributesMap(attrStr, jPath) {
+function buildAttributesMap(attrStr, jPath, tagName) {
   if (this.options.ignoreAttributes !== true && typeof attrStr === "string") {
     const matches = getAllMatches(attrStr, attrsRegx);
     const len = matches.length;
@@ -32690,7 +32755,7 @@ function buildAttributesMap(attrStr, jPath) {
           if (this.options.trimValues) {
             oldVal = oldVal.trim();
           }
-          oldVal = this.replaceEntitiesValue(oldVal);
+          oldVal = this.replaceEntitiesValue(oldVal, tagName, jPath);
           const newVal = this.options.attributeValueProcessor(attrName, oldVal, jPath);
           if (newVal === null || newVal === void 0) {
             attrs[aName] = oldVal;
@@ -32725,6 +32790,8 @@ const parseXml = function(xmlData) {
   let currentNode = xmlObj;
   let textData = "";
   let jPath = "";
+  this.entityExpansionCount = 0;
+  this.currentExpandedLength = 0;
   const docTypeReader = new DocTypeReader(this.options.processEntities);
   for (let i = 0; i < xmlData.length; i++) {
     const ch = xmlData[i];
@@ -32768,7 +32835,7 @@ const parseXml = function(xmlData) {
           const childNode = new XmlNode(tagData.tagName);
           childNode.add(this.options.textNodeName, "");
           if (tagData.tagName !== tagData.tagExp && tagData.attrExpPresent) {
-            childNode[":@"] = this.buildAttributesMap(tagData.tagExp, jPath);
+            childNode[":@"] = this.buildAttributesMap(tagData.tagExp, jPath, tagData.tagName);
           }
           this.addChild(currentNode, childNode, jPath, i);
         }
@@ -32846,10 +32913,7 @@ const parseXml = function(xmlData) {
           }
           const childNode = new XmlNode(tagName);
           if (tagName !== tagExp && attrExpPresent) {
-            childNode[":@"] = this.buildAttributesMap(
-              tagExp,
-              jPath
-            );
+            childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
           }
           if (tagContent) {
             tagContent = this.parseTextData(tagContent, tagName, jPath, true, attrExpPresent, true, true);
@@ -32875,7 +32939,7 @@ const parseXml = function(xmlData) {
             }
             const childNode = new XmlNode(tagName);
             if (tagName !== tagExp && attrExpPresent) {
-              childNode[":@"] = this.buildAttributesMap(tagExp, jPath);
+              childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
             }
             this.addChild(currentNode, childNode, jPath, startIndex);
             jPath = jPath.substr(0, jPath.lastIndexOf("."));
@@ -32883,7 +32947,7 @@ const parseXml = function(xmlData) {
             const childNode = new XmlNode(tagName);
             this.tagsNodeStack.push(currentNode);
             if (tagName !== tagExp && attrExpPresent) {
-              childNode[":@"] = this.buildAttributesMap(tagExp, jPath);
+              childNode[":@"] = this.buildAttributesMap(tagExp, jPath, tagName);
             }
             this.addChild(currentNode, childNode, jPath, startIndex);
             currentNode = childNode;
@@ -32909,24 +32973,59 @@ function addChild(currentNode, childNode, jPath, startIndex) {
     currentNode.addChild(childNode, startIndex);
   }
 }
-const replaceEntitiesValue$1 = function(val) {
-  if (this.options.processEntities) {
-    for (let entityName in this.docTypeEntities) {
-      const entity = this.docTypeEntities[entityName];
+const replaceEntitiesValue$1 = function(val, tagName, jPath) {
+  if (val.indexOf("&") === -1) {
+    return val;
+  }
+  const entityConfig = this.options.processEntities;
+  if (!entityConfig.enabled) {
+    return val;
+  }
+  if (entityConfig.allowedTags) {
+    if (!entityConfig.allowedTags.includes(tagName)) {
+      return val;
+    }
+  }
+  if (entityConfig.tagFilter) {
+    if (!entityConfig.tagFilter(tagName, jPath)) {
+      return val;
+    }
+  }
+  for (let entityName in this.docTypeEntities) {
+    const entity = this.docTypeEntities[entityName];
+    const matches = val.match(entity.regx);
+    if (matches) {
+      this.entityExpansionCount += matches.length;
+      if (entityConfig.maxTotalExpansions && this.entityExpansionCount > entityConfig.maxTotalExpansions) {
+        throw new Error(
+          `Entity expansion limit exceeded: ${this.entityExpansionCount} > ${entityConfig.maxTotalExpansions}`
+        );
+      }
+      const lengthBefore = val.length;
       val = val.replace(entity.regx, entity.val);
-    }
-    for (let entityName in this.lastEntities) {
-      const entity = this.lastEntities[entityName];
-      val = val.replace(entity.regex, entity.val);
-    }
-    if (this.options.htmlEntities) {
-      for (let entityName in this.htmlEntities) {
-        const entity = this.htmlEntities[entityName];
-        val = val.replace(entity.regex, entity.val);
+      if (entityConfig.maxExpandedLength) {
+        this.currentExpandedLength += val.length - lengthBefore;
+        if (this.currentExpandedLength > entityConfig.maxExpandedLength) {
+          throw new Error(
+            `Total expanded content size exceeded: ${this.currentExpandedLength} > ${entityConfig.maxExpandedLength}`
+          );
+        }
       }
     }
-    val = val.replace(this.ampEntity.regex, this.ampEntity.val);
   }
+  if (val.indexOf("&") === -1) return val;
+  for (let entityName in this.lastEntities) {
+    const entity = this.lastEntities[entityName];
+    val = val.replace(entity.regex, entity.val);
+  }
+  if (val.indexOf("&") === -1) return val;
+  if (this.options.htmlEntities) {
+    for (let entityName in this.htmlEntities) {
+      const entity = this.htmlEntities[entityName];
+      val = val.replace(entity.regex, entity.val);
+    }
+  }
+  val = val.replace(this.ampEntity.regex, this.ampEntity.val);
   return val;
 };
 function saveTextToParentTag(textData, currentNode, jPath, isLeafNode) {
@@ -33574,26 +33673,26 @@ function isAttribute(name) {
     return false;
   }
 }
-var __defProp2 = Object.defineProperty;
+var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
 var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __spreadValues = (a, b) => {
   for (var prop in b || (b = {}))
     if (__hasOwnProp.call(b, prop))
-      __defNormalProp2(a, prop, b[prop]);
+      __defNormalProp(a, prop, b[prop]);
   if (__getOwnPropSymbols)
     for (var prop of __getOwnPropSymbols(b)) {
       if (__propIsEnum.call(b, prop))
-        __defNormalProp2(a, prop, b[prop]);
+        __defNormalProp(a, prop, b[prop]);
     }
   return a;
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __publicField2 = (obj, key, value) => __defNormalProp2(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 var __async = (__this, __arguments, generator) => {
   return new Promise((resolve, reject2) => {
     var fulfilled = (value) => {
@@ -33615,23 +33714,51 @@ var __async = (__this, __arguments, generator) => {
   });
 };
 class BaseXmlComponent {
+  /**
+   * Creates a new BaseXmlComponent with the specified XML element name.
+   *
+   * @param rootKey - The XML element name (e.g., "w:p", "w:r", "w:t")
+   */
   constructor(rootKey) {
-    __publicField2(this, "rootKey");
+    __publicField(this, "rootKey");
     this.rootKey = rootKey;
   }
 }
 const EMPTY_OBJECT = Object.seal({});
 class XmlComponent extends BaseXmlComponent {
+  /**
+   * Creates a new XmlComponent.
+   *
+   * @param rootKey - The XML element name (e.g., "w:p", "w:r", "w:t")
+   */
   constructor(rootKey) {
     super(rootKey);
-    __publicField2(this, "root");
+    __publicField(this, "root");
     this.root = new Array();
   }
-  // This method is called by the formatter to get the XML representation of this component.
-  // It is called recursively for all child components.
-  // It is a serializer to be used in the xml library.
-  // https://www.npmjs.com/package/xml
-  // Child components can override this method to customize the XML representation, or execute side effects.
+  /**
+   * Prepares this component and its children for XML serialization.
+   *
+   * This method is called by the Formatter to convert the component tree into
+   * an object structure compatible with the xml library (https://www.npmjs.com/package/xml).
+   * It recursively processes all children and handles special cases like
+   * attribute-only elements and empty elements.
+   *
+   * The method can be overridden by subclasses to customize XML representation
+   * or execute side effects during serialization (e.g., creating relationships).
+   *
+   * @param context - The serialization context containing document state
+   * @returns The XML-serializable object, or undefined to exclude from output
+   *
+   * @example
+   * ```typescript
+   * // Override to add custom serialization logic
+   * prepForXml(context: IContext): IXmlableObject | undefined {
+   *   // Custom logic here
+   *   return super.prepForXml(context);
+   * }
+   * ```
+   */
   prepForXml(context2) {
     var _a;
     context2.stack.push(this);
@@ -33647,7 +33774,11 @@ class XmlComponent extends BaseXmlComponent {
     };
   }
   /**
+   * Adds a child element to this component.
+   *
    * @deprecated Do not use this method. It is only used internally by the library. It will be removed in a future version.
+   * @param child - The child component or text string to add
+   * @returns This component (for chaining)
    */
   addChildElement(child) {
     this.root.push(child);
@@ -33655,8 +33786,22 @@ class XmlComponent extends BaseXmlComponent {
   }
 }
 class IgnoreIfEmptyXmlComponent extends XmlComponent {
+  constructor(rootKey, includeIfEmpty) {
+    super(rootKey);
+    __publicField(this, "includeIfEmpty");
+    this.includeIfEmpty = includeIfEmpty;
+  }
+  /**
+   * Prepares the component for XML serialization, excluding it if empty.
+   *
+   * @param context - The serialization context
+   * @returns The XML-serializable object, or undefined if empty
+   */
   prepForXml(context2) {
     const result2 = super.prepForXml(context2);
+    if (this.includeIfEmpty) {
+      return result2;
+    }
     if (result2 && (typeof result2[this.rootKey] !== "object" || Object.keys(result2[this.rootKey]).length)) {
       return result2;
     }
@@ -33664,11 +33809,25 @@ class IgnoreIfEmptyXmlComponent extends XmlComponent {
   }
 }
 class XmlAttributeComponent extends BaseXmlComponent {
+  /**
+   * Creates a new attribute component.
+   *
+   * @param root - The attribute data object
+   */
   constructor(root2) {
     super("_attr");
-    __publicField2(this, "xmlKeys");
+    __publicField(this, "xmlKeys");
     this.root = root2;
   }
+  /**
+   * Converts the attribute data to an XML-serializable object.
+   *
+   * This method transforms the property names using xmlKeys (if defined)
+   * and filters out undefined values.
+   *
+   * @param _ - Context (unused for attributes)
+   * @returns Object with _attr key containing the mapped attributes
+   */
   prepForXml(_2) {
     const attrs = {};
     Object.entries(this.root).forEach(([key, value]) => {
@@ -33681,10 +33840,24 @@ class XmlAttributeComponent extends BaseXmlComponent {
   }
 }
 class NextAttributeComponent extends BaseXmlComponent {
+  /**
+   * Creates a new NextAttributeComponent.
+   *
+   * @param root - Attribute payload with explicit key-value mappings
+   */
   constructor(root2) {
     super("_attr");
     this.root = root2;
   }
+  /**
+   * Converts the attribute payload to an XML-serializable object.
+   *
+   * Extracts the key and value from each property and filters out
+   * undefined values.
+   *
+   * @param _ - Context (unused for attributes)
+   * @returns Object with _attr key containing the attributes
+   */
   prepForXml(_2) {
     const attrs = Object.values(this.root).filter(({ value }) => value !== void 0).reduce((acc, { key, value }) => __spreadProps(__spreadValues({}, acc), { [key]: value }), {});
     return { _attr: attrs };
@@ -33693,7 +33866,7 @@ class NextAttributeComponent extends BaseXmlComponent {
 class Attributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       val: "w:val",
       color: "w:color",
       fill: "w:fill",
@@ -34394,7 +34567,6 @@ function requireBase64Js() {
   return base64Js;
 }
 var ieee754 = {};
-/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 var hasRequiredIeee754;
 function requireIeee754() {
   if (hasRequiredIeee754) return ieee754;
@@ -34478,12 +34650,6 @@ function requireIeee754() {
   };
   return ieee754;
 }
-/*!
- * The buffer module from node.js, for the browser.
- *
- * @author   Feross Aboukhadijeh <https://feross.org>
- * @license  MIT
- */
 var hasRequiredBuffer;
 function requireBuffer() {
   if (hasRequiredBuffer) return buffer;
@@ -35871,7 +36037,7 @@ function requireShams$1() {
       return true;
     }
     var obj = {};
-    var sym = Symbol("test");
+    var sym = /* @__PURE__ */ Symbol("test");
     var symObj = Object(sym);
     if (typeof sym === "string") {
       return false;
@@ -36117,7 +36283,7 @@ function requireHasSymbols() {
     if (typeof origSymbol("foo") !== "symbol") {
       return false;
     }
-    if (typeof Symbol("bar") !== "symbol") {
+    if (typeof /* @__PURE__ */ Symbol("bar") !== "symbol") {
       return false;
     }
     return hasSymbolSham();
@@ -36671,178 +36837,24 @@ function requireGetIntrinsic() {
   };
   return getIntrinsic;
 }
-var callBind = { exports: {} };
-var defineDataProperty;
-var hasRequiredDefineDataProperty;
-function requireDefineDataProperty() {
-  if (hasRequiredDefineDataProperty) return defineDataProperty;
-  hasRequiredDefineDataProperty = 1;
-  var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
-  var $SyntaxError = /* @__PURE__ */ requireSyntax();
-  var $TypeError = /* @__PURE__ */ requireType();
-  var gopd2 = /* @__PURE__ */ requireGopd();
-  defineDataProperty = function defineDataProperty2(obj, property2, value) {
-    if (!obj || typeof obj !== "object" && typeof obj !== "function") {
-      throw new $TypeError("`obj` must be an object or a function`");
-    }
-    if (typeof property2 !== "string" && typeof property2 !== "symbol") {
-      throw new $TypeError("`property` must be a string or a symbol`");
-    }
-    if (arguments.length > 3 && typeof arguments[3] !== "boolean" && arguments[3] !== null) {
-      throw new $TypeError("`nonEnumerable`, if provided, must be a boolean or null");
-    }
-    if (arguments.length > 4 && typeof arguments[4] !== "boolean" && arguments[4] !== null) {
-      throw new $TypeError("`nonWritable`, if provided, must be a boolean or null");
-    }
-    if (arguments.length > 5 && typeof arguments[5] !== "boolean" && arguments[5] !== null) {
-      throw new $TypeError("`nonConfigurable`, if provided, must be a boolean or null");
-    }
-    if (arguments.length > 6 && typeof arguments[6] !== "boolean") {
-      throw new $TypeError("`loose`, if provided, must be a boolean");
-    }
-    var nonEnumerable = arguments.length > 3 ? arguments[3] : null;
-    var nonWritable = arguments.length > 4 ? arguments[4] : null;
-    var nonConfigurable = arguments.length > 5 ? arguments[5] : null;
-    var loose = arguments.length > 6 ? arguments[6] : false;
-    var desc = !!gopd2 && gopd2(obj, property2);
-    if ($defineProperty) {
-      $defineProperty(obj, property2, {
-        configurable: nonConfigurable === null && desc ? desc.configurable : !nonConfigurable,
-        enumerable: nonEnumerable === null && desc ? desc.enumerable : !nonEnumerable,
-        value,
-        writable: nonWritable === null && desc ? desc.writable : !nonWritable
-      });
-    } else if (loose || !nonEnumerable && !nonWritable && !nonConfigurable) {
-      obj[property2] = value;
-    } else {
-      throw new $SyntaxError("This environment does not support defining a property as non-configurable, non-writable, or non-enumerable.");
-    }
-  };
-  return defineDataProperty;
-}
-var hasPropertyDescriptors_1;
-var hasRequiredHasPropertyDescriptors;
-function requireHasPropertyDescriptors() {
-  if (hasRequiredHasPropertyDescriptors) return hasPropertyDescriptors_1;
-  hasRequiredHasPropertyDescriptors = 1;
-  var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
-  var hasPropertyDescriptors = function hasPropertyDescriptors2() {
-    return !!$defineProperty;
-  };
-  hasPropertyDescriptors.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
-    if (!$defineProperty) {
-      return null;
-    }
-    try {
-      return $defineProperty([], "length", { value: 1 }).length !== 1;
-    } catch (e) {
-      return true;
-    }
-  };
-  hasPropertyDescriptors_1 = hasPropertyDescriptors;
-  return hasPropertyDescriptors_1;
-}
-var setFunctionLength;
-var hasRequiredSetFunctionLength;
-function requireSetFunctionLength() {
-  if (hasRequiredSetFunctionLength) return setFunctionLength;
-  hasRequiredSetFunctionLength = 1;
-  var GetIntrinsic = /* @__PURE__ */ requireGetIntrinsic();
-  var define = /* @__PURE__ */ requireDefineDataProperty();
-  var hasDescriptors = /* @__PURE__ */ requireHasPropertyDescriptors()();
-  var gOPD2 = /* @__PURE__ */ requireGopd();
-  var $TypeError = /* @__PURE__ */ requireType();
-  var $floor = GetIntrinsic("%Math.floor%");
-  setFunctionLength = function setFunctionLength2(fn, length) {
-    if (typeof fn !== "function") {
-      throw new $TypeError("`fn` is not a function");
-    }
-    if (typeof length !== "number" || length < 0 || length > 4294967295 || $floor(length) !== length) {
-      throw new $TypeError("`length` must be a positive 32-bit integer");
-    }
-    var loose = arguments.length > 2 && !!arguments[2];
-    var functionLengthIsConfigurable = true;
-    var functionLengthIsWritable = true;
-    if ("length" in fn && gOPD2) {
-      var desc = gOPD2(fn, "length");
-      if (desc && !desc.configurable) {
-        functionLengthIsConfigurable = false;
-      }
-      if (desc && !desc.writable) {
-        functionLengthIsWritable = false;
-      }
-    }
-    if (functionLengthIsConfigurable || functionLengthIsWritable || !loose) {
-      if (hasDescriptors) {
-        define(
-          /** @type {Parameters<define>[0]} */
-          fn,
-          "length",
-          length,
-          true,
-          true
-        );
-      } else {
-        define(
-          /** @type {Parameters<define>[0]} */
-          fn,
-          "length",
-          length
-        );
-      }
-    }
-    return fn;
-  };
-  return setFunctionLength;
-}
-var hasRequiredCallBind;
-function requireCallBind() {
-  if (hasRequiredCallBind) return callBind.exports;
-  hasRequiredCallBind = 1;
-  (function(module2) {
-    var bind2 = requireFunctionBind();
-    var GetIntrinsic = /* @__PURE__ */ requireGetIntrinsic();
-    var setFunctionLength2 = /* @__PURE__ */ requireSetFunctionLength();
-    var $TypeError = /* @__PURE__ */ requireType();
-    var $apply = GetIntrinsic("%Function.prototype.apply%");
-    var $call = GetIntrinsic("%Function.prototype.call%");
-    var $reflectApply = GetIntrinsic("%Reflect.apply%", true) || bind2.call($call, $apply);
-    var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
-    var $max = GetIntrinsic("%Math.max%");
-    module2.exports = function callBind2(originalFunction) {
-      if (typeof originalFunction !== "function") {
-        throw new $TypeError("a function is required");
-      }
-      var func = $reflectApply(bind2, $call, arguments);
-      return setFunctionLength2(
-        func,
-        1 + $max(0, originalFunction.length - (arguments.length - 1)),
-        true
-      );
-    };
-    var applyBind = function applyBind2() {
-      return $reflectApply(bind2, $apply, arguments);
-    };
-    if ($defineProperty) {
-      $defineProperty(module2.exports, "apply", { value: applyBind });
-    } else {
-      module2.exports.apply = applyBind;
-    }
-  })(callBind);
-  return callBind.exports;
-}
 var callBound;
 var hasRequiredCallBound;
 function requireCallBound() {
   if (hasRequiredCallBound) return callBound;
   hasRequiredCallBound = 1;
   var GetIntrinsic = /* @__PURE__ */ requireGetIntrinsic();
-  var callBind2 = requireCallBind();
-  var $indexOf = callBind2(GetIntrinsic("String.prototype.indexOf"));
+  var callBindBasic = requireCallBindApplyHelpers();
+  var $indexOf = callBindBasic([GetIntrinsic("%String.prototype.indexOf%")]);
   callBound = function callBoundIntrinsic(name, allowMissing) {
-    var intrinsic = GetIntrinsic(name, !!allowMissing);
+    var intrinsic = (
+      /** @type {(this: unknown, ...args: unknown[]) => unknown} */
+      GetIntrinsic(name, !!allowMissing)
+    );
     if (typeof intrinsic === "function" && $indexOf(name, ".prototype.") > -1) {
-      return callBind2(intrinsic);
+      return callBindBasic(
+        /** @type {const} */
+        [intrinsic]
+      );
     }
     return intrinsic;
   };
@@ -36854,7 +36866,7 @@ function requireIsArguments() {
   if (hasRequiredIsArguments) return isArguments;
   hasRequiredIsArguments = 1;
   var hasToStringTag = requireShams()();
-  var callBound2 = requireCallBound();
+  var callBound2 = /* @__PURE__ */ requireCallBound();
   var $toString = callBound2("Object.prototype.toString");
   var isStandardArguments = function isArguments2(value) {
     if (hasToStringTag && value && typeof value === "object" && Symbol.toStringTag in value) {
@@ -36866,7 +36878,7 @@ function requireIsArguments() {
     if (isStandardArguments(value)) {
       return true;
     }
-    return value !== null && typeof value === "object" && typeof value.length === "number" && value.length >= 0 && $toString(value) !== "[object Array]" && $toString(value.callee) === "[object Function]";
+    return value !== null && typeof value === "object" && "length" in value && typeof value.length === "number" && value.length >= 0 && $toString(value) !== "[object Array]" && "callee" in value && $toString(value.callee) === "[object Function]";
   };
   var supportsStandardArguments = function() {
     return isStandardArguments(arguments);
@@ -37034,10 +37046,10 @@ function requireIsCallable() {
   };
   return isCallable;
 }
-var forEach_1;
+var forEach;
 var hasRequiredForEach;
 function requireForEach() {
-  if (hasRequiredForEach) return forEach_1;
+  if (hasRequiredForEach) return forEach;
   hasRequiredForEach = 1;
   var isCallable2 = requireIsCallable();
   var toStr = Object.prototype.toString;
@@ -37073,7 +37085,10 @@ function requireForEach() {
       }
     }
   };
-  var forEach = function forEach2(list, iterator, thisArg) {
+  function isArray2(x) {
+    return toStr.call(x) === "[object Array]";
+  }
+  forEach = function forEach2(list, iterator, thisArg) {
     if (!isCallable2(iterator)) {
       throw new TypeError("iterator must be a function");
     }
@@ -37081,7 +37096,7 @@ function requireForEach() {
     if (arguments.length >= 3) {
       receiver = thisArg;
     }
-    if (toStr.call(list) === "[object Array]") {
+    if (isArray2(list)) {
       forEachArray(list, iterator, receiver);
     } else if (typeof list === "string") {
       forEachString(list, iterator, receiver);
@@ -37089,8 +37104,7 @@ function requireForEach() {
       forEachObject(list, iterator, receiver);
     }
   };
-  forEach_1 = forEach;
-  return forEach_1;
+  return forEach;
 }
 var possibleTypedArrayNames;
 var hasRequiredPossibleTypedArrayNames;
@@ -37130,22 +37144,185 @@ function requireAvailableTypedArrays() {
   };
   return availableTypedArrays;
 }
+var callBind = { exports: {} };
+var defineDataProperty;
+var hasRequiredDefineDataProperty;
+function requireDefineDataProperty() {
+  if (hasRequiredDefineDataProperty) return defineDataProperty;
+  hasRequiredDefineDataProperty = 1;
+  var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
+  var $SyntaxError = /* @__PURE__ */ requireSyntax();
+  var $TypeError = /* @__PURE__ */ requireType();
+  var gopd2 = /* @__PURE__ */ requireGopd();
+  defineDataProperty = function defineDataProperty2(obj, property2, value) {
+    if (!obj || typeof obj !== "object" && typeof obj !== "function") {
+      throw new $TypeError("`obj` must be an object or a function`");
+    }
+    if (typeof property2 !== "string" && typeof property2 !== "symbol") {
+      throw new $TypeError("`property` must be a string or a symbol`");
+    }
+    if (arguments.length > 3 && typeof arguments[3] !== "boolean" && arguments[3] !== null) {
+      throw new $TypeError("`nonEnumerable`, if provided, must be a boolean or null");
+    }
+    if (arguments.length > 4 && typeof arguments[4] !== "boolean" && arguments[4] !== null) {
+      throw new $TypeError("`nonWritable`, if provided, must be a boolean or null");
+    }
+    if (arguments.length > 5 && typeof arguments[5] !== "boolean" && arguments[5] !== null) {
+      throw new $TypeError("`nonConfigurable`, if provided, must be a boolean or null");
+    }
+    if (arguments.length > 6 && typeof arguments[6] !== "boolean") {
+      throw new $TypeError("`loose`, if provided, must be a boolean");
+    }
+    var nonEnumerable = arguments.length > 3 ? arguments[3] : null;
+    var nonWritable = arguments.length > 4 ? arguments[4] : null;
+    var nonConfigurable = arguments.length > 5 ? arguments[5] : null;
+    var loose = arguments.length > 6 ? arguments[6] : false;
+    var desc = !!gopd2 && gopd2(obj, property2);
+    if ($defineProperty) {
+      $defineProperty(obj, property2, {
+        configurable: nonConfigurable === null && desc ? desc.configurable : !nonConfigurable,
+        enumerable: nonEnumerable === null && desc ? desc.enumerable : !nonEnumerable,
+        value,
+        writable: nonWritable === null && desc ? desc.writable : !nonWritable
+      });
+    } else if (loose || !nonEnumerable && !nonWritable && !nonConfigurable) {
+      obj[property2] = value;
+    } else {
+      throw new $SyntaxError("This environment does not support defining a property as non-configurable, non-writable, or non-enumerable.");
+    }
+  };
+  return defineDataProperty;
+}
+var hasPropertyDescriptors_1;
+var hasRequiredHasPropertyDescriptors;
+function requireHasPropertyDescriptors() {
+  if (hasRequiredHasPropertyDescriptors) return hasPropertyDescriptors_1;
+  hasRequiredHasPropertyDescriptors = 1;
+  var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
+  var hasPropertyDescriptors = function hasPropertyDescriptors2() {
+    return !!$defineProperty;
+  };
+  hasPropertyDescriptors.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
+    if (!$defineProperty) {
+      return null;
+    }
+    try {
+      return $defineProperty([], "length", { value: 1 }).length !== 1;
+    } catch (e) {
+      return true;
+    }
+  };
+  hasPropertyDescriptors_1 = hasPropertyDescriptors;
+  return hasPropertyDescriptors_1;
+}
+var setFunctionLength;
+var hasRequiredSetFunctionLength;
+function requireSetFunctionLength() {
+  if (hasRequiredSetFunctionLength) return setFunctionLength;
+  hasRequiredSetFunctionLength = 1;
+  var GetIntrinsic = /* @__PURE__ */ requireGetIntrinsic();
+  var define = /* @__PURE__ */ requireDefineDataProperty();
+  var hasDescriptors = /* @__PURE__ */ requireHasPropertyDescriptors()();
+  var gOPD2 = /* @__PURE__ */ requireGopd();
+  var $TypeError = /* @__PURE__ */ requireType();
+  var $floor = GetIntrinsic("%Math.floor%");
+  setFunctionLength = function setFunctionLength2(fn, length) {
+    if (typeof fn !== "function") {
+      throw new $TypeError("`fn` is not a function");
+    }
+    if (typeof length !== "number" || length < 0 || length > 4294967295 || $floor(length) !== length) {
+      throw new $TypeError("`length` must be a positive 32-bit integer");
+    }
+    var loose = arguments.length > 2 && !!arguments[2];
+    var functionLengthIsConfigurable = true;
+    var functionLengthIsWritable = true;
+    if ("length" in fn && gOPD2) {
+      var desc = gOPD2(fn, "length");
+      if (desc && !desc.configurable) {
+        functionLengthIsConfigurable = false;
+      }
+      if (desc && !desc.writable) {
+        functionLengthIsWritable = false;
+      }
+    }
+    if (functionLengthIsConfigurable || functionLengthIsWritable || !loose) {
+      if (hasDescriptors) {
+        define(
+          /** @type {Parameters<define>[0]} */
+          fn,
+          "length",
+          length,
+          true,
+          true
+        );
+      } else {
+        define(
+          /** @type {Parameters<define>[0]} */
+          fn,
+          "length",
+          length
+        );
+      }
+    }
+    return fn;
+  };
+  return setFunctionLength;
+}
+var applyBind;
+var hasRequiredApplyBind;
+function requireApplyBind() {
+  if (hasRequiredApplyBind) return applyBind;
+  hasRequiredApplyBind = 1;
+  var bind2 = requireFunctionBind();
+  var $apply = requireFunctionApply();
+  var actualApply2 = requireActualApply();
+  applyBind = function applyBind2() {
+    return actualApply2(bind2, $apply, arguments);
+  };
+  return applyBind;
+}
+var hasRequiredCallBind;
+function requireCallBind() {
+  if (hasRequiredCallBind) return callBind.exports;
+  hasRequiredCallBind = 1;
+  (function(module) {
+    var setFunctionLength2 = /* @__PURE__ */ requireSetFunctionLength();
+    var $defineProperty = /* @__PURE__ */ requireEsDefineProperty();
+    var callBindBasic = requireCallBindApplyHelpers();
+    var applyBind2 = requireApplyBind();
+    module.exports = function callBind2(originalFunction) {
+      var func = callBindBasic(arguments);
+      var adjustedLength = originalFunction.length - (arguments.length - 1);
+      return setFunctionLength2(
+        func,
+        1 + (adjustedLength > 0 ? adjustedLength : 0),
+        true
+      );
+    };
+    if ($defineProperty) {
+      $defineProperty(module.exports, "apply", { value: applyBind2 });
+    } else {
+      module.exports.apply = applyBind2;
+    }
+  })(callBind);
+  return callBind.exports;
+}
 var whichTypedArray;
 var hasRequiredWhichTypedArray;
 function requireWhichTypedArray() {
   if (hasRequiredWhichTypedArray) return whichTypedArray;
   hasRequiredWhichTypedArray = 1;
-  var forEach = requireForEach();
+  var forEach2 = requireForEach();
   var availableTypedArrays2 = /* @__PURE__ */ requireAvailableTypedArrays();
   var callBind2 = requireCallBind();
-  var callBound2 = requireCallBound();
+  var callBound2 = /* @__PURE__ */ requireCallBound();
   var gOPD2 = /* @__PURE__ */ requireGopd();
+  var getProto2 = requireGetProto();
   var $toString = callBound2("Object.prototype.toString");
   var hasToStringTag = requireShams()();
   var g = typeof globalThis === "undefined" ? commonjsGlobal : globalThis;
   var typedArrays = availableTypedArrays2();
   var $slice = callBound2("String.prototype.slice");
-  var getPrototypeOf = Object.getPrototypeOf;
   var $indexOf = callBound2("Array.prototype.indexOf", true) || function indexOf2(array, value) {
     for (var i = 0; i < array.length; i += 1) {
       if (array[i] === value) {
@@ -37155,41 +37332,45 @@ function requireWhichTypedArray() {
     return -1;
   };
   var cache = { __proto__: null };
-  if (hasToStringTag && gOPD2 && getPrototypeOf) {
-    forEach(typedArrays, function(typedArray) {
+  if (hasToStringTag && gOPD2 && getProto2) {
+    forEach2(typedArrays, function(typedArray) {
       var arr = new g[typedArray]();
-      if (Symbol.toStringTag in arr) {
-        var proto = getPrototypeOf(arr);
+      if (Symbol.toStringTag in arr && getProto2) {
+        var proto = getProto2(arr);
         var descriptor = gOPD2(proto, Symbol.toStringTag);
-        if (!descriptor) {
-          var superProto = getPrototypeOf(proto);
+        if (!descriptor && proto) {
+          var superProto = getProto2(proto);
           descriptor = gOPD2(superProto, Symbol.toStringTag);
         }
         cache["$" + typedArray] = callBind2(descriptor.get);
       }
     });
   } else {
-    forEach(typedArrays, function(typedArray) {
+    forEach2(typedArrays, function(typedArray) {
       var arr = new g[typedArray]();
       var fn = arr.slice || arr.set;
       if (fn) {
-        cache["$" + typedArray] = callBind2(fn);
+        cache[
+          /** @type {`$${import('.').TypedArrayName}`} */
+          "$" + typedArray
+        ] = /** @type {import('./types').BoundSlice | import('./types').BoundSet} */
+        // @ts-expect-error TODO FIXME
+        callBind2(fn);
       }
     });
   }
   var tryTypedArrays = function tryAllTypedArrays(value) {
     var found = false;
-    forEach(
-      // eslint-disable-next-line no-extra-parens
-      /** @type {Record<`\$${TypedArrayName}`, Getter>} */
-      /** @type {any} */
+    forEach2(
+      /** @type {Record<`\$${import('.').TypedArrayName}`, Getter>} */
       cache,
       /** @type {(getter: Getter, name: `\$${import('.').TypedArrayName}`) => void} */
       function(getter, typedArray) {
         if (!found) {
           try {
             if ("$" + getter(value) === typedArray) {
-              found = $slice(typedArray, 1);
+              found = /** @type {import('.').TypedArrayName} */
+              $slice(typedArray, 1);
             }
           } catch (e) {
           }
@@ -37200,17 +37381,16 @@ function requireWhichTypedArray() {
   };
   var trySlices = function tryAllSlices(value) {
     var found = false;
-    forEach(
-      // eslint-disable-next-line no-extra-parens
-      /** @type {Record<`\$${TypedArrayName}`, Getter>} */
-      /** @type {any} */
+    forEach2(
+      /** @type {Record<`\$${import('.').TypedArrayName}`, Getter>} */
       cache,
-      /** @type {(getter: typeof cache, name: `\$${import('.').TypedArrayName}`) => void} */
+      /** @type {(getter: Getter, name: `\$${import('.').TypedArrayName}`) => void} */
       function(getter, name) {
         if (!found) {
           try {
             getter(value);
-            found = $slice(name, 1);
+            found = /** @type {import('.').TypedArrayName} */
+            $slice(name, 1);
           } catch (e) {
           }
         }
@@ -37255,7 +37435,7 @@ function requireTypes() {
   if (hasRequiredTypes) return types;
   hasRequiredTypes = 1;
   (function(exports$1) {
-    var isArgumentsObject = requireIsArguments();
+    var isArgumentsObject = /* @__PURE__ */ requireIsArguments();
     var isGeneratorFunction2 = requireIsGeneratorFunction();
     var whichTypedArray2 = /* @__PURE__ */ requireWhichTypedArray();
     var isTypedArray2 = /* @__PURE__ */ requireIsTypedArray();
@@ -37948,7 +38128,7 @@ function requireUtil() {
     function hasOwnProperty2(obj, prop) {
       return Object.prototype.hasOwnProperty.call(obj, prop);
     }
-    var kCustomPromisifiedSymbol = typeof Symbol !== "undefined" ? Symbol("util.promisify.custom") : void 0;
+    var kCustomPromisifiedSymbol = typeof Symbol !== "undefined" ? /* @__PURE__ */ Symbol("util.promisify.custom") : void 0;
     exports$1.promisify = function promisify2(original) {
       if (typeof original !== "function")
         throw new TypeError('The "original" argument must be of type Function');
@@ -38056,31 +38236,25 @@ function requireBuffer_list() {
     var keys2 = Object.keys(object2);
     if (Object.getOwnPropertySymbols) {
       var symbols = Object.getOwnPropertySymbols(object2);
-      if (enumerableOnly) symbols = symbols.filter(function(sym) {
+      enumerableOnly && (symbols = symbols.filter(function(sym) {
         return Object.getOwnPropertyDescriptor(object2, sym).enumerable;
-      });
-      keys2.push.apply(keys2, symbols);
+      })), keys2.push.apply(keys2, symbols);
     }
     return keys2;
   }
   function _objectSpread(target) {
     for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function(key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function(key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), true).forEach(function(key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function(key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
     }
     return target;
   }
   function _defineProperty(obj, key, value) {
+    key = _toPropertyKey(key);
     if (key in obj) {
       Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
     } else {
@@ -38099,12 +38273,27 @@ function requireBuffer_list() {
       descriptor.enumerable = descriptor.enumerable || false;
       descriptor.configurable = true;
       if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
+      Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor);
     }
   }
   function _createClass(Constructor, protoProps, staticProps) {
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+    Object.defineProperty(Constructor, "prototype", { writable: false });
     return Constructor;
+  }
+  function _toPropertyKey(arg) {
+    var key = _toPrimitive(arg, "string");
+    return typeof key === "symbol" ? key : String(key);
+  }
+  function _toPrimitive(input, hint) {
+    if (typeof input !== "object" || input === null) return input;
+    var prim = input[Symbol.toPrimitive];
+    if (prim !== void 0) {
+      var res = prim.call(input, hint);
+      if (typeof res !== "object") return res;
+      throw new TypeError("@@toPrimitive must return a primitive value.");
+    }
+    return String(input);
   }
   var _require = requireBuffer(), Buffer2 = _require.Buffer;
   var _require2 = requireUtil(), inspect = _require2.inspect;
@@ -38164,9 +38353,7 @@ function requireBuffer_list() {
         if (this.length === 0) return "";
         var p = this.head;
         var ret = "" + p.data;
-        while (p = p.next) {
-          ret += s + p.data;
-        }
+        while (p = p.next) ret += s + p.data;
         return ret;
       }
     }, {
@@ -38267,7 +38454,7 @@ function requireBuffer_list() {
     }, {
       key: custom,
       value: function value(_2, options) {
-        return inspect(this, _objectSpread({}, options, {
+        return inspect(this, _objectSpread(_objectSpread({}, options), {}, {
           // Only inspect one level.
           depth: 0,
           // It should not recurse.
@@ -38561,7 +38748,7 @@ function require_stream_writable() {
   };
   var Stream = requireStreamBrowser();
   var Buffer2 = requireBuffer().Buffer;
-  var OurUint8Array = commonjsGlobal.Uint8Array || function() {
+  var OurUint8Array = (typeof commonjsGlobal !== "undefined" ? commonjsGlobal : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
   };
   function _uint8ArrayToBuffer(chunk2) {
     return Buffer2.from(chunk2);
@@ -39009,9 +39196,7 @@ function require_stream_duplex() {
   hasRequired_stream_duplex = 1;
   var objectKeys = Object.keys || function(obj) {
     var keys22 = [];
-    for (var key in obj) {
-      keys22.push(key);
-    }
+    for (var key in obj) keys22.push(key);
     return keys22;
   };
   _stream_duplex = Duplex;
@@ -39100,7 +39285,7 @@ var hasRequiredSafeBuffer;
 function requireSafeBuffer() {
   if (hasRequiredSafeBuffer) return safeBuffer.exports;
   hasRequiredSafeBuffer = 1;
-  (function(module2, exports$1) {
+  (function(module, exports$1) {
     var buffer2 = requireBuffer();
     var Buffer2 = buffer2.Buffer;
     function copyProps(src, dst) {
@@ -39109,7 +39294,7 @@ function requireSafeBuffer() {
       }
     }
     if (Buffer2.from && Buffer2.alloc && Buffer2.allocUnsafe && Buffer2.allocUnsafeSlow) {
-      module2.exports = buffer2;
+      module.exports = buffer2;
     } else {
       copyProps(buffer2, exports$1);
       exports$1.Buffer = SafeBuffer;
@@ -39488,6 +39673,7 @@ function requireAsync_iterator() {
   hasRequiredAsync_iterator = 1;
   var _Object$setPrototypeO;
   function _defineProperty(obj, key, value) {
+    key = _toPropertyKey(key);
     if (key in obj) {
       Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
     } else {
@@ -39495,14 +39681,28 @@ function requireAsync_iterator() {
     }
     return obj;
   }
+  function _toPropertyKey(arg) {
+    var key = _toPrimitive(arg, "string");
+    return typeof key === "symbol" ? key : String(key);
+  }
+  function _toPrimitive(input, hint) {
+    if (typeof input !== "object" || input === null) return input;
+    var prim = input[Symbol.toPrimitive];
+    if (prim !== void 0) {
+      var res = prim.call(input, hint);
+      if (typeof res !== "object") return res;
+      throw new TypeError("@@toPrimitive must return a primitive value.");
+    }
+    return (hint === "string" ? String : Number)(input);
+  }
   var finished = requireEndOfStream();
-  var kLastResolve = Symbol("lastResolve");
-  var kLastReject = Symbol("lastReject");
-  var kError = Symbol("error");
-  var kEnded = Symbol("ended");
-  var kLastPromise = Symbol("lastPromise");
-  var kHandlePromise = Symbol("handlePromise");
-  var kStream = Symbol("stream");
+  var kLastResolve = /* @__PURE__ */ Symbol("lastResolve");
+  var kLastReject = /* @__PURE__ */ Symbol("lastReject");
+  var kError = /* @__PURE__ */ Symbol("error");
+  var kEnded = /* @__PURE__ */ Symbol("ended");
+  var kLastPromise = /* @__PURE__ */ Symbol("lastPromise");
+  var kHandlePromise = /* @__PURE__ */ Symbol("handlePromise");
+  var kStream = /* @__PURE__ */ Symbol("stream");
   function createIterResult(value, done) {
     return {
       value,
@@ -39673,7 +39873,7 @@ function require_stream_readable() {
   };
   var Stream = requireStreamBrowser();
   var Buffer2 = requireBuffer().Buffer;
-  var OurUint8Array = commonjsGlobal.Uint8Array || function() {
+  var OurUint8Array = (typeof commonjsGlobal !== "undefined" ? commonjsGlobal : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
   };
   function _uint8ArrayToBuffer(chunk2) {
     return Buffer2.from(chunk2);
@@ -40138,11 +40338,9 @@ function require_stream_readable() {
       state2.pipes = null;
       state2.pipesCount = 0;
       state2.flowing = false;
-      for (var i = 0; i < len; i++) {
-        dests[i].emit("unpipe", this, {
-          hasUnpiped: false
-        });
-      }
+      for (var i = 0; i < len; i++) dests[i].emit("unpipe", this, {
+        hasUnpiped: false
+      });
       return this;
     }
     var index = indexOf2(state2.pipes, dest);
@@ -40241,8 +40439,7 @@ function require_stream_readable() {
   function flow(stream2) {
     var state2 = stream2._readableState;
     debug("flow", state2.flowing);
-    while (state2.flowing && stream2.read() !== null) {
-    }
+    while (state2.flowing && stream2.read() !== null) ;
   }
   Readable.prototype.wrap = function(stream2) {
     var _this = this;
@@ -42046,7 +42243,6 @@ function requireSax() {
         }
         return parser2;
       }
-      /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
       if (!String.fromCodePoint) {
         (function() {
           var stringFromCharCode = String.fromCharCode;
@@ -42908,18 +43104,30 @@ class ImportedXmlComponentAttributes extends XmlAttributeComponent {
 }
 class ImportedXmlComponent extends XmlComponent {
   /**
-   * Converts the xml string to a XmlComponent tree.
+   * Parses an XML string and converts it to an ImportedXmlComponent tree.
    *
-   * @param importedContent xml content of the imported component
+   * This static method is the primary way to import external XML content.
+   * It uses xml-js to parse the XML string into a JSON representation,
+   * then converts that into a tree of XmlComponent objects.
+   *
+   * @param importedContent - The XML content as a string
+   * @returns An ImportedXmlComponent representing the parsed XML
+   *
+   * @example
+   * ```typescript
+   * const xml = '<w:p><w:r><w:t>Hello</w:t></w:r></w:p>';
+   * const component = ImportedXmlComponent.fromXmlString(xml);
+   * ```
    */
   static fromXmlString(importedContent) {
     const xmlObj = libExports.xml2js(importedContent, { compact: false });
     return convertToXmlComponent(xmlObj);
   }
   /**
-   * Converts the xml string to a XmlComponent tree.
+   * Creates an ImportedXmlComponent.
    *
-   * @param importedContent xml content of the imported component
+   * @param rootKey - The XML element name
+   * @param _attr - Optional attributes for the root element
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(rootKey, _attr) {
@@ -42928,16 +43136,32 @@ class ImportedXmlComponent extends XmlComponent {
       this.root.push(new ImportedXmlComponentAttributes(_attr));
     }
   }
+  /**
+   * Adds a child component or text to this element.
+   *
+   * @param xmlComponent - The child component or text string to add
+   */
   push(xmlComponent) {
     this.root.push(xmlComponent);
   }
 }
 class ImportedRootElementAttributes extends XmlComponent {
+  /**
+   * Creates an ImportedRootElementAttributes component.
+   *
+   * @param _attr - The attributes object to pass through
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(_attr) {
     super("");
     this._attr = _attr;
   }
+  /**
+   * Prepares the attributes for XML serialization.
+   *
+   * @param _ - Context (unused)
+   * @returns Object with _attr key containing the raw attributes
+   */
   prepForXml(_2) {
     return {
       _attr: this._attr
@@ -42945,6 +43169,12 @@ class ImportedRootElementAttributes extends XmlComponent {
   }
 }
 class InitializableXmlComponent extends XmlComponent {
+  /**
+   * Creates a new InitializableXmlComponent.
+   *
+   * @param rootKey - The XML element name
+   * @param initComponent - Optional component to copy children from
+   */
   constructor(rootKey, initComponent) {
     super(rootKey);
     if (initComponent) {
@@ -42999,6 +43229,12 @@ const eighthPointMeasureValue = unsignedDecimalNumber;
 const pointMeasureValue = unsignedDecimalNumber;
 const dateTimeValue = (val) => val.toISOString();
 class OnOffElement extends XmlComponent {
+  /**
+   * Creates an OnOffElement.
+   *
+   * @param name - The XML element name (e.g., "w:b", "w:i")
+   * @param val - The boolean value (defaults to true)
+   */
   constructor(name, val = true) {
     super(name);
     if (val !== true) {
@@ -43007,12 +43243,26 @@ class OnOffElement extends XmlComponent {
   }
 }
 class HpsMeasureElement extends XmlComponent {
+  /**
+   * Creates an HpsMeasureElement.
+   *
+   * @param name - The XML element name
+   * @param val - The measurement value (number in half-points or string with units)
+   */
   constructor(name, val) {
     super(name);
     this.root.push(new Attributes({ val: hpsMeasureValue(val) }));
   }
 }
+class EmptyElement extends XmlComponent {
+}
 class StringValueElement extends XmlComponent {
+  /**
+   * Creates a StringValueElement.
+   *
+   * @param name - The XML element name
+   * @param val - The string value
+   */
   constructor(name, val) {
     super(name);
     this.root.push(new Attributes({ val }));
@@ -43025,18 +43275,38 @@ const createStringElement = (name, value) => new BuilderElement({
   }
 });
 class NumberValueElement extends XmlComponent {
+  /**
+   * Creates a NumberValueElement.
+   *
+   * @param name - The XML element name
+   * @param val - The numeric value
+   */
   constructor(name, val) {
     super(name);
     this.root.push(new Attributes({ val }));
   }
 }
 class StringContainer extends XmlComponent {
+  /**
+   * Creates a StringContainer.
+   *
+   * @param name - The XML element name
+   * @param val - The text content
+   */
   constructor(name, val) {
     super(name);
     this.root.push(val);
   }
 }
 class BuilderElement extends XmlComponent {
+  /**
+   * Creates a BuilderElement with the specified configuration.
+   *
+   * @param config - Element configuration
+   * @param config.name - The XML element name
+   * @param config.attributes - Optional attributes with explicit key-value pairs
+   * @param config.children - Optional child elements
+   */
   constructor({
     name,
     attributes,
@@ -43079,42 +43349,21 @@ const AlignmentType = {
   /** Justified */
   JUSTIFIED: "both"
 };
-class AlignmentAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val" });
+const createAlignment = (type2) => new BuilderElement({
+  name: "w:jc",
+  attributes: {
+    val: { key: "w:val", value: type2 }
   }
-}
-class Alignment extends XmlComponent {
-  constructor(type2) {
-    super("w:jc");
-    this.root.push(new AlignmentAttributes({ val: type2 }));
+});
+const createBorderElement = (elementName, { color, size: size2, space, style }) => new BuilderElement({
+  name: elementName,
+  attributes: {
+    style: { key: "w:val", value: style },
+    color: { key: "w:color", value: color === void 0 ? void 0 : hexColorValue(color) },
+    size: { key: "w:sz", value: size2 === void 0 ? void 0 : eighthPointMeasureValue(size2) },
+    space: { key: "w:space", value: space === void 0 ? void 0 : pointMeasureValue(space) }
   }
-}
-class BorderElement extends XmlComponent {
-  constructor(elementName, { color, size: size2, space, style }) {
-    super(elementName);
-    this.root.push(
-      new BordersAttributes({
-        style,
-        color: color === void 0 ? void 0 : hexColorValue(color),
-        size: size2 === void 0 ? void 0 : eighthPointMeasureValue(size2),
-        space: space === void 0 ? void 0 : pointMeasureValue(space)
-      })
-    );
-  }
-}
-class BordersAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      style: "w:val",
-      color: "w:color",
-      size: "w:sz",
-      space: "w:space"
-    });
-  }
-}
+});
 const BorderStyle = {
   /** a single line */
   SINGLE: "single",
@@ -43125,23 +43374,26 @@ class Border extends IgnoreIfEmptyXmlComponent {
   constructor(options) {
     super("w:pBdr");
     if (options.top) {
-      this.root.push(new BorderElement("w:top", options.top));
+      this.root.push(createBorderElement("w:top", options.top));
     }
     if (options.bottom) {
-      this.root.push(new BorderElement("w:bottom", options.bottom));
+      this.root.push(createBorderElement("w:bottom", options.bottom));
     }
     if (options.left) {
-      this.root.push(new BorderElement("w:left", options.left));
+      this.root.push(createBorderElement("w:left", options.left));
     }
     if (options.right) {
-      this.root.push(new BorderElement("w:right", options.right));
+      this.root.push(createBorderElement("w:right", options.right));
+    }
+    if (options.between) {
+      this.root.push(createBorderElement("w:between", options.between));
     }
   }
 }
 class ThematicBreak extends XmlComponent {
   constructor() {
     super("w:pBdr");
-    const bottom = new BorderElement("w:bottom", {
+    const bottom = createBorderElement("w:bottom", {
       color: "auto",
       space: 1,
       style: BorderStyle.SINGLE,
@@ -43150,73 +43402,35 @@ class ThematicBreak extends XmlComponent {
     this.root.push(bottom);
   }
 }
-class Indent extends XmlComponent {
-  constructor({ start, end, left, right, hanging, firstLine }) {
-    super("w:ind");
-    this.root.push(
-      new NextAttributeComponent({
-        start: {
-          key: "w:start",
-          value: start === void 0 ? void 0 : signedTwipsMeasureValue(start)
-        },
-        end: {
-          key: "w:end",
-          value: end === void 0 ? void 0 : signedTwipsMeasureValue(end)
-        },
-        left: {
-          key: "w:left",
-          value: left === void 0 ? void 0 : signedTwipsMeasureValue(left)
-        },
-        right: {
-          key: "w:right",
-          value: right === void 0 ? void 0 : signedTwipsMeasureValue(right)
-        },
-        hanging: {
-          key: "w:hanging",
-          value: hanging === void 0 ? void 0 : twipsMeasureValue(hanging)
-        },
-        firstLine: {
-          key: "w:firstLine",
-          value: firstLine === void 0 ? void 0 : twipsMeasureValue(firstLine)
-        }
-      })
-    );
+const createIndent = ({ start, end, left, right, hanging, firstLine }) => new BuilderElement({
+  name: "w:ind",
+  attributes: {
+    start: { key: "w:start", value: start === void 0 ? void 0 : signedTwipsMeasureValue(start) },
+    end: { key: "w:end", value: end === void 0 ? void 0 : signedTwipsMeasureValue(end) },
+    left: { key: "w:left", value: left === void 0 ? void 0 : signedTwipsMeasureValue(left) },
+    right: { key: "w:right", value: right === void 0 ? void 0 : signedTwipsMeasureValue(right) },
+    hanging: { key: "w:hanging", value: hanging === void 0 ? void 0 : twipsMeasureValue(hanging) },
+    firstLine: { key: "w:firstLine", value: firstLine === void 0 ? void 0 : twipsMeasureValue(firstLine) }
   }
-}
-let Break$1 = class Break2 extends XmlComponent {
-  constructor() {
-    super("w:br");
-  }
-};
+});
+const createBreak = () => new BuilderElement({
+  name: "w:br"
+});
 const FieldCharacterType = {
   BEGIN: "begin",
   END: "end",
   SEPARATE: "separate"
 };
-class FidCharAttrs extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", { type: "w:fldCharType", dirty: "w:dirty" });
+const createFieldChar = (type2, dirty) => new BuilderElement({
+  name: "w:fldChar",
+  attributes: {
+    type: { key: "w:fldCharType", value: type2 },
+    dirty: { key: "w:dirty", value: dirty }
   }
-}
-class Begin extends XmlComponent {
-  constructor(dirty) {
-    super("w:fldChar");
-    this.root.push(new FidCharAttrs({ type: FieldCharacterType.BEGIN, dirty }));
-  }
-}
-class Separate extends XmlComponent {
-  constructor(dirty) {
-    super("w:fldChar");
-    this.root.push(new FidCharAttrs({ type: FieldCharacterType.SEPARATE, dirty }));
-  }
-}
-class End extends XmlComponent {
-  constructor(dirty) {
-    super("w:fldChar");
-    this.root.push(new FidCharAttrs({ type: FieldCharacterType.END, dirty }));
-  }
-}
+});
+const createBegin = (dirty) => createFieldChar(FieldCharacterType.BEGIN, dirty);
+const createSeparate = (dirty) => createFieldChar(FieldCharacterType.SEPARATE, dirty);
+const createEnd = (dirty) => createFieldChar(FieldCharacterType.END, dirty);
 const SpaceType = {
   DEFAULT: "default",
   PRESERVE: "preserve"
@@ -43224,7 +43438,7 @@ const SpaceType = {
 class TextAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { space: "xml:space" });
+    __publicField(this, "xmlKeys", { space: "xml:space" });
   }
 }
 class Page extends XmlComponent {
@@ -43255,56 +43469,58 @@ class CurrentSection extends XmlComponent {
     this.root.push("SECTION");
   }
 }
-class ShadingAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      fill: "w:fill",
-      color: "w:color",
-      type: "w:val"
-    });
+const createShading = ({ fill, color, type: type2 }) => new BuilderElement({
+  name: "w:shd",
+  attributes: {
+    fill: { key: "w:fill", value: fill === void 0 ? void 0 : hexColorValue(fill) },
+    color: { key: "w:color", value: color === void 0 ? void 0 : hexColorValue(color) },
+    type: { key: "w:val", value: type2 }
   }
-}
-class Shading extends XmlComponent {
-  constructor({ fill, color, type: type2 }) {
-    super("w:shd");
-    this.root.push(
-      new ShadingAttributes({
-        fill: fill === void 0 ? void 0 : hexColorValue(fill),
-        color: color === void 0 ? void 0 : hexColorValue(color),
-        type: type2
-      })
-    );
-  }
-}
+});
 class ChangeAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       id: "w:id",
       author: "w:author",
       date: "w:date"
     });
   }
 }
-const EmphasisMarkType = {
-  DOT: "dot"
-};
-class BaseEmphasisMark extends XmlComponent {
-  constructor(emphasisMarkType) {
-    super("w:em");
+class DeletionTrackChange extends XmlComponent {
+  constructor(options) {
+    super("w:del");
     this.root.push(
-      new Attributes({
-        val: emphasisMarkType
+      new ChangeAttributes({
+        id: options.id,
+        author: options.author,
+        date: options.date
       })
     );
   }
 }
-class EmphasisMark extends BaseEmphasisMark {
-  constructor(emphasisMarkType = EmphasisMarkType.DOT) {
-    super(emphasisMarkType);
+class InsertionTrackChange extends XmlComponent {
+  constructor(options) {
+    super("w:ins");
+    this.root.push(
+      new ChangeAttributes({
+        id: options.id,
+        author: options.author,
+        date: options.date
+      })
+    );
   }
 }
+const EmphasisMarkType = {
+  /** Dot emphasis mark */
+  DOT: "dot"
+};
+const createEmphasisMark = (emphasisMarkType = EmphasisMarkType.DOT) => new BuilderElement({
+  name: "w:em",
+  attributes: {
+    val: { key: "w:val", value: emphasisMarkType }
+  }
+});
 class CharacterSpacing extends XmlComponent {
   constructor(value) {
     super("w:spacing");
@@ -43362,72 +43578,51 @@ const createLanguageComponent = (options) => new BuilderElement({
     }
   }
 });
-class RunFontAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      ascii: "w:ascii",
-      cs: "w:cs",
-      eastAsia: "w:eastAsia",
-      hAnsi: "w:hAnsi",
-      hint: "w:hint"
+const createRunFonts = (nameOrAttrs, hint) => {
+  if (typeof nameOrAttrs === "string") {
+    const name = nameOrAttrs;
+    return new BuilderElement({
+      name: "w:rFonts",
+      attributes: {
+        ascii: { key: "w:ascii", value: name },
+        cs: { key: "w:cs", value: name },
+        eastAsia: { key: "w:eastAsia", value: name },
+        hAnsi: { key: "w:hAnsi", value: name },
+        hint: { key: "w:hint", value: hint }
+      }
     });
   }
-}
-class RunFonts extends XmlComponent {
-  constructor(nameOrAttrs, hint) {
-    super("w:rFonts");
-    if (typeof nameOrAttrs === "string") {
-      const name = nameOrAttrs;
-      this.root.push(
-        new RunFontAttributes({
-          ascii: name,
-          cs: name,
-          eastAsia: name,
-          hAnsi: name,
-          hint
-        })
-      );
-    } else {
-      const attrs = nameOrAttrs;
-      this.root.push(new RunFontAttributes(attrs));
+  const attrs = nameOrAttrs;
+  return new BuilderElement({
+    name: "w:rFonts",
+    attributes: {
+      ascii: { key: "w:ascii", value: attrs.ascii },
+      cs: { key: "w:cs", value: attrs.cs },
+      eastAsia: { key: "w:eastAsia", value: attrs.eastAsia },
+      hAnsi: { key: "w:hAnsi", value: attrs.hAnsi },
+      hint: { key: "w:hint", value: attrs.hint }
     }
-  }
-}
-let VerticalAlign$1 = class VerticalAlign extends XmlComponent {
-  constructor(type2) {
-    super("w:vertAlign");
-    this.root.push(
-      new Attributes({
-        val: type2
-      })
-    );
-  }
+  });
 };
-class SuperScript extends VerticalAlign$1 {
-  constructor() {
-    super("superscript");
+const createVerticalAlignRun = (type2) => new BuilderElement({
+  name: "w:vertAlign",
+  attributes: {
+    val: { key: "w:val", value: type2 }
   }
-}
-class SubScript extends VerticalAlign$1 {
-  constructor() {
-    super("subscript");
-  }
-}
+});
+const createSuperScript = () => createVerticalAlignRun("superscript");
+const createSubScript = () => createVerticalAlignRun("subscript");
 const UnderlineType = {
+  /** Single underline */
   SINGLE: "single"
 };
-class Underline extends XmlComponent {
-  constructor(underlineType = UnderlineType.SINGLE, color) {
-    super("w:u");
-    this.root.push(
-      new Attributes({
-        val: underlineType,
-        color: color === void 0 ? void 0 : hexColorValue(color)
-      })
-    );
+const createUnderline = (underlineType = UnderlineType.SINGLE, color) => new BuilderElement({
+  name: "w:u",
+  attributes: {
+    val: { key: "w:val", value: underlineType },
+    color: { key: "w:color", value: color === void 0 ? void 0 : hexColorValue(color) }
   }
-}
+});
 class RunProperties extends IgnoreIfEmptyXmlComponent {
   constructor(options) {
     var _a, _b;
@@ -43440,11 +43635,11 @@ class RunProperties extends IgnoreIfEmptyXmlComponent {
     }
     if (options.font) {
       if (typeof options.font === "string") {
-        this.push(new RunFonts(options.font));
+        this.push(createRunFonts(options.font));
       } else if ("name" in options.font) {
-        this.push(new RunFonts(options.font.name, options.font.hint));
+        this.push(createRunFonts(options.font.name, options.font.hint));
       } else {
-        this.push(new RunFonts(options.font));
+        this.push(createRunFonts(options.font));
       }
     }
     if (options.bold !== void 0) {
@@ -43515,28 +43710,28 @@ class RunProperties extends IgnoreIfEmptyXmlComponent {
       this.push(new HighlightComplexScript(highlightCs));
     }
     if (options.underline) {
-      this.push(new Underline(options.underline.type, options.underline.color));
+      this.push(createUnderline(options.underline.type, options.underline.color));
     }
     if (options.effect) {
       this.push(new StringValueElement("w:effect", options.effect));
     }
     if (options.border) {
-      this.push(new BorderElement("w:bdr", options.border));
+      this.push(createBorderElement("w:bdr", options.border));
     }
     if (options.shading) {
-      this.push(new Shading(options.shading));
+      this.push(createShading(options.shading));
     }
     if (options.subScript) {
-      this.push(new SubScript());
+      this.push(createSubScript());
     }
     if (options.superScript) {
-      this.push(new SuperScript());
+      this.push(createSuperScript());
     }
     if (options.rightToLeft !== void 0) {
       this.push(new OnOffElement("w:rtl", options.rightToLeft));
     }
     if (options.emphasisMark) {
-      this.push(new EmphasisMark(options.emphasisMark.type));
+      this.push(createEmphasisMark(options.emphasisMark.type));
     }
     if (options.language) {
       this.push(createLanguageComponent(options.language));
@@ -43553,6 +43748,17 @@ class RunProperties extends IgnoreIfEmptyXmlComponent {
   }
   push(item) {
     this.root.push(item);
+  }
+}
+class ParagraphRunProperties extends RunProperties {
+  constructor(options) {
+    super(options);
+    if (options == null ? void 0 : options.insertion) {
+      this.push(new InsertionTrackChange(options.insertion));
+    }
+    if (options == null ? void 0 : options.deletion) {
+      this.push(new DeletionTrackChange(options.deletion));
+    }
   }
 }
 class RunPropertiesChange extends XmlComponent {
@@ -43582,20 +43788,24 @@ class Text extends XmlComponent {
   }
 }
 const PageNumber = {
+  /** Inserts the current page number */
   CURRENT: "CURRENT",
+  /** Inserts the total number of pages in the document */
   TOTAL_PAGES: "TOTAL_PAGES",
+  /** Inserts the total number of pages in the current section */
   TOTAL_PAGES_IN_SECTION: "TOTAL_PAGES_IN_SECTION",
+  /** Inserts the current section number */
   CURRENT_SECTION: "SECTION"
 };
 class Run extends XmlComponent {
   constructor(options) {
     super("w:r");
-    __publicField2(this, "properties");
+    __publicField(this, "properties");
     this.properties = new RunProperties(options);
     this.root.push(this.properties);
     if (options.break) {
       for (let i = 0; i < options.break; i++) {
-        this.root.push(new Break$1());
+        this.root.push(createBreak());
       }
     }
     if (options.children) {
@@ -43603,28 +43813,28 @@ class Run extends XmlComponent {
         if (typeof child === "string") {
           switch (child) {
             case PageNumber.CURRENT:
-              this.root.push(new Begin());
+              this.root.push(createBegin());
               this.root.push(new Page());
-              this.root.push(new Separate());
-              this.root.push(new End());
+              this.root.push(createSeparate());
+              this.root.push(createEnd());
               break;
             case PageNumber.TOTAL_PAGES:
-              this.root.push(new Begin());
+              this.root.push(createBegin());
               this.root.push(new NumberOfPages());
-              this.root.push(new Separate());
-              this.root.push(new End());
+              this.root.push(createSeparate());
+              this.root.push(createEnd());
               break;
             case PageNumber.TOTAL_PAGES_IN_SECTION:
-              this.root.push(new Begin());
+              this.root.push(createBegin());
               this.root.push(new NumberOfPagesSection());
-              this.root.push(new Separate());
-              this.root.push(new End());
+              this.root.push(createSeparate());
+              this.root.push(createEnd());
               break;
             case PageNumber.CURRENT_SECTION:
-              this.root.push(new Begin());
+              this.root.push(createBegin());
               this.root.push(new CurrentSection());
-              this.root.push(new Separate());
-              this.root.push(new End());
+              this.root.push(createSeparate());
+              this.root.push(createEnd());
               break;
             default:
               this.root.push(new Text(child));
@@ -45322,6 +45532,7 @@ const uniqueId = () => nanoid().toLowerCase();
 const hashedId = (data) => hash.sha1().update(data instanceof ArrayBuffer ? new Uint8Array(data) : data).digest("hex");
 const generateUuidPart = (count) => customAlphabet("1234567890abcdef", count)();
 const uniqueUuid = () => `${generateUuidPart(8)}-${generateUuidPart(4)}-${generateUuidPart(4)}-${generateUuidPart(4)}-${generateUuidPart(12)}`;
+const encodeUtf8 = (str) => new Uint8Array(new TextEncoder().encode(str));
 const HorizontalPositionRelativeFrom = {
   /**
    * ## Page Edge
@@ -45390,10 +45601,232 @@ const createVerticalPosition = ({ relative, align, offset }) => new BuilderEleme
     })()
   ]
 });
+const createBodyProperties = (options = {}) => {
+  var _a, _b, _c, _d;
+  return new BuilderElement({
+    name: "wps:bodyPr",
+    attributes: {
+      lIns: { key: "lIns", value: (_a = options.margins) == null ? void 0 : _a.left },
+      rIns: { key: "rIns", value: (_b = options.margins) == null ? void 0 : _b.right },
+      tIns: { key: "tIns", value: (_c = options.margins) == null ? void 0 : _c.top },
+      bIns: { key: "bIns", value: (_d = options.margins) == null ? void 0 : _d.bottom },
+      anchor: { key: "anchor", value: options.verticalAnchor }
+    },
+    children: [...options.noAutoFit ? [new OnOffElement("a:noAutofit", options.noAutoFit)] : []]
+  });
+};
+const createNonVisualShapeProperties = (options = { txBox: "1" }) => new BuilderElement({
+  name: "wps:cNvSpPr",
+  attributes: {
+    txBox: { key: "txBox", value: options.txBox }
+  }
+});
+const createTextBoxContent = (children) => new BuilderElement({
+  name: "w:txbxContent",
+  children: [...children]
+});
+const createWpsTextBox = (children) => new BuilderElement({
+  name: "wps:txbx",
+  children: [createTextBoxContent(children)]
+});
+class ExtentsAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      cx: "cx",
+      cy: "cy"
+    });
+  }
+}
+class Extents extends XmlComponent {
+  constructor(x, y) {
+    super("a:ext");
+    __publicField(this, "attributes");
+    this.attributes = new ExtentsAttributes({
+      cx: x,
+      cy: y
+    });
+    this.root.push(this.attributes);
+  }
+}
+class OffsetAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      x: "x",
+      y: "y"
+    });
+  }
+}
+class Offset extends XmlComponent {
+  constructor(x, y) {
+    super("a:off");
+    this.root.push(
+      new OffsetAttributes({
+        x: x != null ? x : 0,
+        y: y != null ? y : 0
+      })
+    );
+  }
+}
+class FormAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      flipVertical: "flipV",
+      flipHorizontal: "flipH",
+      rotation: "rot"
+    });
+  }
+}
+class Form extends XmlComponent {
+  constructor(options) {
+    var _a, _b, _c, _d, _e, _f;
+    super("a:xfrm");
+    __publicField(this, "extents");
+    __publicField(this, "offset");
+    this.root.push(
+      new FormAttributes({
+        flipVertical: (_a = options.flip) == null ? void 0 : _a.vertical,
+        flipHorizontal: (_b = options.flip) == null ? void 0 : _b.horizontal,
+        rotation: options.rotation
+      })
+    );
+    this.offset = new Offset((_d = (_c = options.offset) == null ? void 0 : _c.emus) == null ? void 0 : _d.x, (_f = (_e = options.offset) == null ? void 0 : _e.emus) == null ? void 0 : _f.y);
+    this.extents = new Extents(options.emus.x, options.emus.y);
+    this.root.push(this.offset);
+    this.root.push(this.extents);
+  }
+}
+const createNoFill = () => new BuilderElement({ name: "a:noFill" });
+const createSolidRgbColor = (options) => new BuilderElement({
+  name: "a:srgbClr",
+  attributes: {
+    value: {
+      key: "val",
+      value: options.value
+    }
+  }
+});
+const createSchemeColor = (options) => new BuilderElement({
+  name: "a:schemeClr",
+  attributes: {
+    value: {
+      key: "val",
+      value: options.value
+    }
+  }
+});
+const createSolidFill = (options) => new BuilderElement({
+  name: "a:solidFill",
+  children: [options.type === "rgb" ? createSolidRgbColor(options) : createSchemeColor(options)]
+});
+const createOutline = (options) => new BuilderElement({
+  name: "a:ln",
+  attributes: {
+    width: {
+      key: "w",
+      value: options.width
+    },
+    cap: {
+      key: "cap",
+      value: options.cap
+    },
+    compoundLine: {
+      key: "cmpd",
+      value: options.compoundLine
+    },
+    align: {
+      key: "algn",
+      value: options.align
+    }
+  },
+  children: [
+    options.type === "noFill" ? createNoFill() : options.solidFillType === "rgb" ? createSolidFill({
+      type: "rgb",
+      value: options.value
+    }) : createSolidFill({
+      type: "scheme",
+      value: options.value
+    })
+  ]
+});
+class AdjustmentValues extends XmlComponent {
+  constructor() {
+    super("a:avLst");
+  }
+}
+class PresetGeometryAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      prst: "prst"
+    });
+  }
+}
+class PresetGeometry extends XmlComponent {
+  constructor() {
+    super("a:prstGeom");
+    this.root.push(
+      new PresetGeometryAttributes({
+        prst: "rect"
+      })
+    );
+    this.root.push(new AdjustmentValues());
+  }
+}
+class ShapePropertiesAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      bwMode: "bwMode"
+    });
+  }
+}
+class ShapeProperties extends XmlComponent {
+  constructor({
+    element: element2,
+    outline,
+    solidFill,
+    transform
+  }) {
+    super(`${element2}:spPr`);
+    __publicField(this, "form");
+    this.root.push(
+      new ShapePropertiesAttributes({
+        bwMode: "auto"
+      })
+    );
+    this.form = new Form(transform);
+    this.root.push(this.form);
+    this.root.push(new PresetGeometry());
+    if (outline) {
+      this.root.push(createNoFill());
+      this.root.push(createOutline(outline));
+    }
+    if (solidFill) {
+      this.root.push(createSolidFill(solidFill));
+    }
+  }
+}
+const createWpsShape = (options) => new BuilderElement({
+  name: "wps:wsp",
+  children: [
+    createNonVisualShapeProperties(options.nonVisualProperties),
+    new ShapeProperties({
+      element: "wps",
+      transform: options.transformation,
+      outline: options.outline,
+      solidFill: options.solidFill
+    }),
+    createWpsTextBox(options.children),
+    createBodyProperties(options.bodyProperties)
+  ]
+});
 class GraphicDataAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       uri: "uri"
     });
   }
@@ -45466,7 +45899,7 @@ class BlipFill extends XmlComponent {
 class PicLocksAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       noChangeAspect: "noChangeAspect",
       noChangeArrowheads: "noChangeArrowheads"
     });
@@ -45506,7 +45939,7 @@ const createHyperlinkClick = (linkId, hasXmlNs) => new BuilderElement({
 class NonVisualPropertiesAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       id: "id",
       name: "name",
       descr: "descr"
@@ -45546,179 +45979,9 @@ class NonVisualPicProperties extends XmlComponent {
 class PicAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns:pic"
     });
-  }
-}
-class ExtentsAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      cx: "cx",
-      cy: "cy"
-    });
-  }
-}
-class Extents extends XmlComponent {
-  constructor(x, y) {
-    super("a:ext");
-    __publicField2(this, "attributes");
-    this.attributes = new ExtentsAttributes({
-      cx: x,
-      cy: y
-    });
-    this.root.push(this.attributes);
-  }
-}
-class OffsetAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      x: "x",
-      y: "y"
-    });
-  }
-}
-class Offset extends XmlComponent {
-  constructor() {
-    super("a:off");
-    this.root.push(
-      new OffsetAttributes({
-        x: 0,
-        y: 0
-      })
-    );
-  }
-}
-class FormAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      flipVertical: "flipV",
-      flipHorizontal: "flipH",
-      rotation: "rot"
-    });
-  }
-}
-class Form extends XmlComponent {
-  constructor(options) {
-    var _a, _b;
-    super("a:xfrm");
-    __publicField2(this, "extents");
-    this.root.push(
-      new FormAttributes({
-        flipVertical: (_a = options.flip) == null ? void 0 : _a.vertical,
-        flipHorizontal: (_b = options.flip) == null ? void 0 : _b.horizontal,
-        rotation: options.rotation
-      })
-    );
-    this.extents = new Extents(options.emus.x, options.emus.y);
-    this.root.push(new Offset());
-    this.root.push(this.extents);
-  }
-}
-const createNoFill = () => new BuilderElement({ name: "a:noFill" });
-const createSolidRgbColor = (options) => new BuilderElement({
-  name: "a:srgbClr",
-  attributes: {
-    value: {
-      key: "val",
-      value: options.value
-    }
-  }
-});
-const createSchemeColor = (options) => new BuilderElement({
-  name: "a:schemeClr",
-  attributes: {
-    value: {
-      key: "val",
-      value: options.value
-    }
-  }
-});
-const createSolidFill = (options) => new BuilderElement({
-  name: "a:solidFill",
-  children: [options.type === "rgb" ? createSolidRgbColor(options) : createSchemeColor(options)]
-});
-const createOutline = (options) => new BuilderElement({
-  name: "a:ln",
-  attributes: {
-    width: {
-      key: "w",
-      value: options.width
-    },
-    cap: {
-      key: "cap",
-      value: options.cap
-    },
-    compoundLine: {
-      key: "cmpd",
-      value: options.compoundLine
-    },
-    align: {
-      key: "algn",
-      value: options.align
-    }
-  },
-  children: [
-    options.type === "noFill" ? createNoFill() : options.solidFillType === "rgb" ? createSolidFill({
-      type: "rgb",
-      value: options.value
-    }) : createSolidFill({
-      type: "scheme",
-      value: options.value
-    })
-  ]
-});
-class AdjustmentValues extends XmlComponent {
-  constructor() {
-    super("a:avLst");
-  }
-}
-class PresetGeometryAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      prst: "prst"
-    });
-  }
-}
-class PresetGeometry extends XmlComponent {
-  constructor() {
-    super("a:prstGeom");
-    this.root.push(
-      new PresetGeometryAttributes({
-        prst: "rect"
-      })
-    );
-    this.root.push(new AdjustmentValues());
-  }
-}
-class ShapePropertiesAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      bwMode: "bwMode"
-    });
-  }
-}
-class ShapeProperties extends XmlComponent {
-  constructor({ outline, transform }) {
-    super("pic:spPr");
-    __publicField2(this, "form");
-    this.root.push(
-      new ShapePropertiesAttributes({
-        bwMode: "auto"
-      })
-    );
-    this.form = new Form(transform);
-    this.root.push(this.form);
-    this.root.push(new PresetGeometry());
-    if (outline) {
-      this.root.push(createNoFill());
-      this.root.push(createOutline(outline));
-    }
   }
 }
 class Pic extends XmlComponent {
@@ -45735,30 +45998,73 @@ class Pic extends XmlComponent {
     );
     this.root.push(new NonVisualPicProperties());
     this.root.push(new BlipFill(mediaData));
-    this.root.push(new ShapeProperties({ transform, outline }));
+    this.root.push(new ShapeProperties({ element: "pic", transform, outline }));
   }
 }
+const createGroupProperties = (transform) => new BuilderElement({
+  name: "wpg:grpSpPr",
+  children: [new Form(transform)]
+});
+const createNonVisualGroupProperties = () => new BuilderElement({
+  name: "wpg:cNvGrpSpPr"
+});
+const createWpgGroup = (options) => new BuilderElement({
+  name: "wpg:wgp",
+  children: [createNonVisualGroupProperties(), createGroupProperties(options.transformation), ...options.children]
+});
 class GraphicData extends XmlComponent {
+  // private readonly pic: Pic;
   constructor({
     mediaData,
     transform,
-    outline
+    outline,
+    solidFill
   }) {
     super("a:graphicData");
-    __publicField2(this, "pic");
-    this.root.push(
-      new GraphicDataAttributes({
-        uri: "http://schemas.openxmlformats.org/drawingml/2006/picture"
-      })
-    );
-    this.pic = new Pic({ mediaData, transform, outline });
-    this.root.push(this.pic);
+    if (mediaData.type === "wps") {
+      this.root.push(
+        new GraphicDataAttributes({
+          uri: "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+        })
+      );
+      const wps = createWpsShape(__spreadProps(__spreadValues({}, mediaData.data), { transformation: transform, outline, solidFill }));
+      this.root.push(wps);
+    } else if (mediaData.type === "wpg") {
+      this.root.push(
+        new GraphicDataAttributes({
+          uri: "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
+        })
+      );
+      const md = mediaData;
+      const children = md.children.map((child) => {
+        if (child.type === "wps") {
+          return createWpsShape(__spreadProps(__spreadValues({}, child.data), {
+            transformation: child.transformation,
+            outline: child.outline,
+            solidFill: child.solidFill
+          }));
+        } else {
+          return new Pic({ mediaData: child, transform: child.transformation, outline: child.outline });
+        }
+      });
+      const wpg = createWpgGroup({ children, transformation: transform });
+      this.root.push(wpg);
+    } else {
+      this.root.push(
+        new GraphicDataAttributes({
+          uri: "http://schemas.openxmlformats.org/drawingml/2006/picture"
+        })
+      );
+      const md = mediaData;
+      const pic = new Pic({ mediaData: md, transform, outline });
+      this.root.push(pic);
+    }
   }
 }
 class GraphicAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       a: "xmlns:a"
     });
   }
@@ -45767,16 +46073,17 @@ class Graphic extends XmlComponent {
   constructor({
     mediaData,
     transform,
-    outline
+    outline,
+    solidFill
   }) {
     super("a:graphic");
-    __publicField2(this, "data");
+    __publicField(this, "data");
     this.root.push(
       new GraphicAttributes({
         a: "http://schemas.openxmlformats.org/drawingml/2006/main"
       })
     );
-    this.data = new GraphicData({ mediaData, transform, outline });
+    this.data = new GraphicData({ mediaData, transform, outline, solidFill });
     this.root.push(this.data);
   }
 }
@@ -45787,98 +46094,55 @@ const TextWrappingType = {
   TOP_AND_BOTTOM: 3
 };
 const TextWrappingSide = {
+  /** Text wraps on both sides of the drawing */
   BOTH_SIDES: "bothSides"
 };
-class WrapNone extends XmlComponent {
-  constructor() {
-    super("wp:wrapNone");
+const createWrapNone = () => new BuilderElement({
+  name: "wp:wrapNone"
+});
+const createWrapSquare = (textWrapping, margins = {
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0
+}) => new BuilderElement({
+  name: "wp:wrapSquare",
+  attributes: {
+    wrapText: { key: "wrapText", value: textWrapping.side || TextWrappingSide.BOTH_SIDES },
+    distT: { key: "distT", value: margins.top },
+    distB: { key: "distB", value: margins.bottom },
+    distL: { key: "distL", value: margins.left },
+    distR: { key: "distR", value: margins.right }
   }
-}
-class WrapSquareAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      distT: "distT",
-      distB: "distB",
-      distL: "distL",
-      distR: "distR",
-      wrapText: "wrapText"
-    });
+});
+const createWrapTight = (margins = {
+  top: 0,
+  bottom: 0
+}) => new BuilderElement({
+  name: "wp:wrapTight",
+  attributes: {
+    distT: { key: "distT", value: margins.top },
+    distB: { key: "distB", value: margins.bottom }
   }
-}
-class WrapSquare extends XmlComponent {
-  constructor(textWrapping, margins = {
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0
-  }) {
-    super("wp:wrapSquare");
-    this.root.push(
-      new WrapSquareAttributes({
-        wrapText: textWrapping.side || TextWrappingSide.BOTH_SIDES,
-        distT: margins.top,
-        distB: margins.bottom,
-        distL: margins.left,
-        distR: margins.right
-      })
-    );
+});
+const createWrapTopAndBottom = (margins = {
+  top: 0,
+  bottom: 0
+}) => new BuilderElement({
+  name: "wp:wrapTopAndBottom",
+  attributes: {
+    distT: { key: "distT", value: margins.top },
+    distB: { key: "distB", value: margins.bottom }
   }
-}
-class WrapTightAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      distT: "distT",
-      distB: "distB"
-    });
-  }
-}
-class WrapTight extends XmlComponent {
-  constructor(margins = {
-    top: 0,
-    bottom: 0
-  }) {
-    super("wp:wrapTight");
-    this.root.push(
-      new WrapTightAttributes({
-        distT: margins.top,
-        distB: margins.bottom
-      })
-    );
-  }
-}
-class WrapTopAndBottomAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      distT: "distT",
-      distB: "distB"
-    });
-  }
-}
-class WrapTopAndBottom extends XmlComponent {
-  constructor(margins = {
-    top: 0,
-    bottom: 0
-  }) {
-    super("wp:wrapTopAndBottom");
-    this.root.push(
-      new WrapTopAndBottomAttributes({
-        distT: margins.top,
-        distB: margins.bottom
-      })
-    );
-  }
-}
+});
 class DocProperties extends XmlComponent {
-  constructor({ name, description, title } = { name: "", description: "", title: "" }) {
+  constructor({ name, description, title, id } = { name: "", description: "", title: "" }) {
     super("wp:docPr");
-    __publicField2(this, "docPropertiesUniqueNumericId", docPropertiesUniqueNumericIdGen());
+    __publicField(this, "docPropertiesUniqueNumericId", docPropertiesUniqueNumericIdGen());
     const attributes = {
       id: {
         key: "id",
-        value: this.docPropertiesUniqueNumericId()
+        value: id != null ? id : this.docPropertiesUniqueNumericId()
       },
       name: {
         key: "name",
@@ -45942,7 +46206,7 @@ const createExtent = ({ x, y }) => new BuilderElement({
 class GraphicFrameLockAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns:a",
       noChangeAspect: "noChangeAspect"
     });
@@ -45966,7 +46230,7 @@ const createGraphicFrameProperties = () => new BuilderElement({
 class AnchorAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       distT: "distT",
       distB: "distB",
       distL: "distL",
@@ -46018,27 +46282,27 @@ class Anchor extends XmlComponent {
     if (drawingOptions.floating !== void 0 && drawingOptions.floating.wrap !== void 0) {
       switch (drawingOptions.floating.wrap.type) {
         case TextWrappingType.SQUARE:
-          this.root.push(new WrapSquare(drawingOptions.floating.wrap, drawingOptions.floating.margins));
+          this.root.push(createWrapSquare(drawingOptions.floating.wrap, drawingOptions.floating.margins));
           break;
         case TextWrappingType.TIGHT:
-          this.root.push(new WrapTight(drawingOptions.floating.margins));
+          this.root.push(createWrapTight(drawingOptions.floating.margins));
           break;
         case TextWrappingType.TOP_AND_BOTTOM:
-          this.root.push(new WrapTopAndBottom(drawingOptions.floating.margins));
+          this.root.push(createWrapTopAndBottom(drawingOptions.floating.margins));
           break;
         case TextWrappingType.NONE:
         default:
-          this.root.push(new WrapNone());
+          this.root.push(createWrapNone());
       }
     } else {
-      this.root.push(new WrapNone());
+      this.root.push(createWrapNone());
     }
     this.root.push(new DocProperties(drawingOptions.docProperties));
     this.root.push(createGraphicFrameProperties());
-    this.root.push(new Graphic({ mediaData, transform, outline: drawingOptions.outline }));
+    this.root.push(new Graphic({ mediaData, transform, outline: drawingOptions.outline, solidFill: drawingOptions.solidFill }));
   }
 }
-const createInline = ({ mediaData, transform, docProperties, outline }) => {
+const createInline = ({ mediaData, transform, docProperties, outline, solidFill }) => {
   var _a, _b, _c, _d;
   return new BuilderElement({
     name: "wp:inline",
@@ -46072,7 +46336,7 @@ const createInline = ({ mediaData, transform, docProperties, outline }) => {
       ),
       new DocProperties(docProperties),
       createGraphicFrameProperties(),
-      new Graphic({ mediaData, transform, outline })
+      new Graphic({ mediaData, transform, outline, solidFill })
     ]
   });
 };
@@ -46085,7 +46349,8 @@ class Drawing extends XmlComponent {
           mediaData: imageData,
           transform: imageData.transformation,
           docProperties: drawingOptions.docProperties,
-          outline: drawingOptions.outline
+          outline: drawingOptions.outline,
+          solidFill: drawingOptions.solidFill
         })
       );
     } else {
@@ -46094,17 +46359,12 @@ class Drawing extends XmlComponent {
   }
 }
 const convertDataURIToBinary = (dataURI) => {
-  if (typeof atob === "function") {
-    const BASE64_MARKER = ";base64,";
-    const base64Index = dataURI.indexOf(BASE64_MARKER);
-    const base64IndexWithOffset = base64Index === -1 ? 0 : base64Index + BASE64_MARKER.length;
-    return new Uint8Array(
-      atob(dataURI.substring(base64IndexWithOffset)).split("").map((c2) => c2.charCodeAt(0))
-    );
-  } else {
-    const b = require("buffer");
-    return new b.Buffer(dataURI, "base64");
-  }
+  const BASE64_MARKER = ";base64,";
+  const base64Index = dataURI.indexOf(BASE64_MARKER);
+  const base64IndexWithOffset = base64Index === -1 ? 0 : base64Index + BASE64_MARKER.length;
+  return new Uint8Array(
+    atob(dataURI.substring(base64IndexWithOffset)).split("").map((c2) => c2.charCodeAt(0))
+  );
 };
 const standardizeData = (data) => typeof data === "string" ? convertDataURIToBinary(data) : data;
 const createImageData = (options, key) => ({
@@ -46126,7 +46386,7 @@ const createImageData = (options, key) => ({
 class ImageRun extends Run {
   constructor(options) {
     super({});
-    __publicField2(this, "imageData");
+    __publicField(this, "imageData");
     const hash2 = hashedId(options.data);
     const key = `${hash2}.${options.type}`;
     this.imageData = options.type === "svg" ? __spreadProps(__spreadValues({
@@ -46161,38 +46421,24 @@ class ImageRun extends Run {
 class RelationshipsAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns"
     });
   }
 }
-class RelationshipAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      id: "Id",
-      type: "Type",
-      target: "Target",
-      targetMode: "TargetMode"
-    });
-  }
-}
 const TargetModeType = {
+  /** Target is external to the package (e.g., hyperlink to a URL) */
   EXTERNAL: "External"
 };
-class Relationship extends XmlComponent {
-  constructor(id, type2, target, targetMode) {
-    super("Relationship");
-    this.root.push(
-      new RelationshipAttributes({
-        id,
-        type: type2,
-        target,
-        targetMode
-      })
-    );
+const createRelationship = (id, type2, target, targetMode) => new BuilderElement({
+  name: "Relationship",
+  attributes: {
+    id: { key: "Id", value: id },
+    type: { key: "Type", value: type2 },
+    target: { key: "Target", value: target },
+    targetMode: { key: "TargetMode", value: targetMode }
   }
-}
+});
 class Relationships extends XmlComponent {
   constructor() {
     super("Relationships");
@@ -46202,11 +46448,21 @@ class Relationships extends XmlComponent {
       })
     );
   }
-  createRelationship(id, type2, target, targetMode) {
-    const relationship = new Relationship(`rId${id}`, type2, target, targetMode);
-    this.root.push(relationship);
-    return relationship;
+  /**
+   * Creates a new relationship to another part in the package.
+   *
+   * @param id - Unique identifier for this relationship (will be prefixed with "rId")
+   * @param type - Relationship type URI (e.g., image, header, hyperlink)
+   * @param target - Path to the target part
+   * @param targetMode - Optional mode indicating if target is external
+   */
+  addRelationship(id, type2, target, targetMode) {
+    this.root.push(createRelationship(`rId${id}`, type2, target, targetMode));
   }
+  /**
+   * Gets the count of relationships in this collection.
+   * Excludes the attributes element from the count.
+   */
   get RelationshipCount() {
     return this.root.length - 1;
   }
@@ -46214,13 +46470,13 @@ class Relationships extends XmlComponent {
 class CommentAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { id: "w:id", initials: "w:initials", author: "w:author", date: "w:date" });
+    __publicField(this, "xmlKeys", { id: "w:id", initials: "w:initials", author: "w:author", date: "w:date" });
   }
 }
 class RootCommentsAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       "xmlns:cx": "xmlns:cx",
       "xmlns:cx1": "xmlns:cx1",
       "xmlns:cx2": "xmlns:cx2",
@@ -46274,7 +46530,7 @@ class Comment extends XmlComponent {
 class Comments extends XmlComponent {
   constructor({ children }) {
     super("w:comments");
-    __publicField2(this, "relationships");
+    __publicField(this, "relationships");
     this.root.push(
       new RootCommentsAttributes({
         "xmlns:cx": "http://schemas.microsoft.com/office/drawing/2014/chartex",
@@ -46319,80 +46575,67 @@ class Comments extends XmlComponent {
     return this.relationships;
   }
 }
+class EndnoteReference extends EmptyElement {
+  constructor() {
+    super("w:endnoteRef");
+  }
+}
 class PageBreakBefore extends XmlComponent {
   constructor() {
     super("w:pageBreakBefore");
   }
 }
 const LineRuleType = {
+  /** Line spacing is automatically determined based on content */
   AUTO: "auto"
 };
-class SpacingAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      after: "w:after",
-      before: "w:before",
-      line: "w:line",
-      lineRule: "w:lineRule",
-      beforeAutoSpacing: "w:beforeAutospacing",
-      afterAutoSpacing: "w:afterAutospacing"
-    });
+const createSpacing = ({ after: after2, before: before2, line, lineRule, beforeAutoSpacing, afterAutoSpacing }) => new BuilderElement({
+  name: "w:spacing",
+  attributes: {
+    after: { key: "w:after", value: after2 },
+    before: { key: "w:before", value: before2 },
+    line: { key: "w:line", value: line },
+    lineRule: { key: "w:lineRule", value: lineRule },
+    beforeAutoSpacing: { key: "w:beforeAutospacing", value: beforeAutoSpacing },
+    afterAutoSpacing: { key: "w:afterAutospacing", value: afterAutoSpacing }
   }
-}
-class Spacing extends XmlComponent {
-  constructor(options) {
-    super("w:spacing");
-    this.root.push(new SpacingAttributes(options));
-  }
-}
+});
 const HeadingLevel = {
+  /** Heading 1 style */
   HEADING_1: "Heading1",
+  /** Heading 2 style */
   HEADING_2: "Heading2",
+  /** Heading 3 style */
   HEADING_3: "Heading3",
+  /** Heading 4 style */
   HEADING_4: "Heading4",
+  /** Title style */
   TITLE: "Title"
 };
-let Style$1 = class Style extends XmlComponent {
-  constructor(styleId) {
-    super("w:pStyle");
-    this.root.push(
-      new Attributes({
-        val: styleId
-      })
-    );
+const createParagraphStyle = (styleId) => new BuilderElement({
+  name: "w:pStyle",
+  attributes: {
+    val: { key: "w:val", value: styleId }
   }
-};
-class TabStop extends XmlComponent {
-  constructor(tabDefinitions) {
-    super("w:tabs");
-    for (const tabDefinition of tabDefinitions) {
-      this.root.push(new TabStopItem(tabDefinition));
-    }
-  }
-}
+});
 const TabStopType = {
+  /** Left-aligned tab stop */
   LEFT: "left",
+  /** Right-aligned tab stop */
   RIGHT: "right"
 };
-class TabAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val", pos: "w:pos", leader: "w:leader" });
+const createTabStopItem = ({ type: type2, position: position2, leader }) => new BuilderElement({
+  name: "w:tab",
+  attributes: {
+    val: { key: "w:val", value: type2 },
+    pos: { key: "w:pos", value: position2 },
+    leader: { key: "w:leader", value: leader }
   }
-}
-class TabStopItem extends XmlComponent {
-  constructor({ type: type2, position: position2, leader }) {
-    super("w:tab");
-    this.root.push(
-      new TabAttributes({
-        val: type2,
-        pos: position2,
-        leader
-      })
-    );
-  }
-}
+});
+const createTabStop = (tabDefinitions) => new BuilderElement({
+  name: "w:tabs",
+  children: tabDefinitions.map((tabDefinition) => createTabStopItem(tabDefinition))
+});
 class NumberProperties extends XmlComponent {
   constructor(numberId, indentLevel) {
     super("w:numPr");
@@ -46428,13 +46671,13 @@ class NumberId extends XmlComponent {
 class FileChild extends XmlComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "fileChild", Symbol());
+    __publicField(this, "fileChild", /* @__PURE__ */ Symbol());
   }
 }
 class HyperlinkAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       id: "r:id",
       history: "w:history",
       anchor: "w:anchor"
@@ -46444,7 +46687,7 @@ class HyperlinkAttributes extends XmlAttributeComponent {
 class ConcreteHyperlink extends XmlComponent {
   constructor(children, relationshipId, anchor) {
     super("w:hyperlink");
-    __publicField2(this, "linkId");
+    __publicField(this, "linkId");
     this.linkId = relationshipId;
     const props2 = {
       history: 1,
@@ -46467,7 +46710,7 @@ class ExternalHyperlink extends XmlComponent {
 class BookmarkStartAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       id: "w:id",
       name: "w:name"
     });
@@ -46476,17 +46719,17 @@ class BookmarkStartAttributes extends XmlAttributeComponent {
 class BookmarkEndAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       id: "w:id"
     });
   }
 }
 class Bookmark {
   constructor(options) {
-    __publicField2(this, "bookmarkUniqueNumericId", bookmarkUniqueNumericIdGen());
-    __publicField2(this, "start");
-    __publicField2(this, "children");
-    __publicField2(this, "end");
+    __publicField(this, "bookmarkUniqueNumericId", bookmarkUniqueNumericIdGen());
+    __publicField(this, "start");
+    __publicField(this, "children");
+    __publicField(this, "end");
     const linkId = this.bookmarkUniqueNumericId();
     this.start = new BookmarkStart(options.id, linkId);
     this.children = options.children;
@@ -46512,534 +46755,153 @@ class BookmarkEnd extends XmlComponent {
     this.root.push(attributes);
   }
 }
-class OutlineLevel extends XmlComponent {
-  constructor(level) {
-    super("w:outlineLvl");
-    this.level = level;
-    this.root.push(
-      new Attributes({
-        val: level
-      })
-    );
-  }
-}
-const VerticalAlignTable = {
-  TOP: "top",
-  CENTER: "center",
-  BOTTOM: "bottom"
-};
-__spreadProps(__spreadValues({}, VerticalAlignTable), {
-  BOTH: "both"
-});
-class VerticalAlignAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      verticalAlign: "w:val"
-    });
-  }
-}
-class VerticalAlignElement extends XmlComponent {
-  constructor(value) {
-    super("w:vAlign");
-    this.root.push(new VerticalAlignAttributes({ verticalAlign: value }));
-  }
-}
-class Columns extends XmlComponent {
-  constructor({ space, count, separate, equalWidth, children }) {
-    super("w:cols");
-    this.root.push(
-      new NextAttributeComponent({
-        space: { key: "w:space", value: space === void 0 ? void 0 : twipsMeasureValue(space) },
-        count: { key: "w:num", value: count === void 0 ? void 0 : decimalNumber(count) },
-        separate: { key: "w:sep", value: separate },
-        equalWidth: { key: "w:equalWidth", value: equalWidth }
-      })
-    );
-    if (!equalWidth && children) {
-      children.forEach((column) => this.addChildElement(column));
-    }
-  }
-}
-const createDocumentGrid = ({ type: type2, linePitch, charSpace }) => new BuilderElement({
-  name: "w:docGrid",
+const createOutlineLevel = (level) => new BuilderElement({
+  name: "w:outlineLvl",
   attributes: {
-    type: { key: "w:type", value: type2 },
-    linePitch: { key: "w:linePitch", value: decimalNumber(linePitch) },
-    charSpace: { key: "w:charSpace", value: charSpace ? decimalNumber(charSpace) : void 0 }
+    val: { key: "w:val", value: level }
   }
 });
-const HeaderFooterReferenceType = {
-  /** Specifies that this header or footer shall appear on every page in this section which is not overridden with a specific `even` or `first` page header/footer. In a section with all three types specified, this type shall be used on all odd numbered pages (counting from the `first` page in the section, not the section numbering). */
-  DEFAULT: "default",
-  /** Specifies that this header or footer shall appear on the first page in this section. The appearance of this header or footer is contingent on the setting of the `titlePg` element (§2.10.6). */
-  FIRST: "first",
-  /** Specifies that this header or footer shall appear on all even numbered pages in this section (counting from the first page in the section, not the section numbering). The appearance of this header or footer is contingent on the setting of the `evenAndOddHeaders` element (§2.10.1). */
-  EVEN: "even"
-};
-class FooterReferenceAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      type: "w:type",
-      id: "r:id"
-    });
-  }
-}
-const HeaderFooterType = {
-  HEADER: "w:headerReference",
-  FOOTER: "w:footerReference"
-};
-class HeaderFooterReference extends XmlComponent {
-  constructor(type2, options) {
-    super(type2);
-    this.root.push(
-      new FooterReferenceAttributes({
-        type: options.type || HeaderFooterReferenceType.DEFAULT,
-        id: `rId${options.id}`
-      })
-    );
-  }
-}
-const createLineNumberType = ({ countBy: countBy2, start, restart, distance }) => new BuilderElement({
-  name: "w:lnNumType",
+const createFontRelationship = ({ id, fontKey, subsetted }, name) => new BuilderElement({
+  name,
+  attributes: __spreadValues({
+    id: { key: "r:id", value: id }
+  }, fontKey ? { fontKey: { key: "w:fontKey", value: `{${fontKey}}` } } : {}),
+  children: [...subsetted ? [new OnOffElement("w:subsetted", subsetted)] : []]
+});
+const createFont = ({
+  name,
+  altName,
+  panose1,
+  charset,
+  family,
+  notTrueType,
+  pitch,
+  sig: sig2,
+  embedRegular,
+  embedBold,
+  embedItalic,
+  embedBoldItalic
+}) => new BuilderElement({
+  name: "w:font",
   attributes: {
-    countBy: { key: "w:countBy", value: countBy2 === void 0 ? void 0 : decimalNumber(countBy2) },
-    start: { key: "w:start", value: start === void 0 ? void 0 : decimalNumber(start) },
-    restart: { key: "w:restart", value: restart },
-    distance: {
-      key: "w:distance",
-      value: distance === void 0 ? void 0 : twipsMeasureValue(distance)
-    }
+    name: { key: "w:name", value: name }
+  },
+  children: [
+    // http://www.datypic.com/sc/ooxml/e-w_altName-1.html
+    ...altName ? [createStringElement("w:altName", altName)] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_panose1-1.html
+    ...panose1 ? [createStringElement("w:panose1", panose1)] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_charset-1.html
+    ...charset ? [createStringElement("w:charset", charset)] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_family-1.html
+    ...[createStringElement("w:family", family)],
+    // http://www.datypic.com/sc/ooxml/e-w_notTrueType-1.html
+    ...notTrueType ? [new OnOffElement("w:notTrueType", notTrueType)] : [],
+    ...[createStringElement("w:pitch", pitch)],
+    // http://www.datypic.com/sc/ooxml/e-w_sig-1.html
+    ...sig2 ? [
+      new BuilderElement({
+        name: "w:sig",
+        attributes: {
+          usb0: { key: "w:usb0", value: sig2.usb0 },
+          usb1: { key: "w:usb1", value: sig2.usb1 },
+          usb2: { key: "w:usb2", value: sig2.usb2 },
+          usb3: { key: "w:usb3", value: sig2.usb3 },
+          csb0: { key: "w:csb0", value: sig2.csb0 },
+          csb1: { key: "w:csb1", value: sig2.csb1 }
+        }
+      })
+    ] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_embedRegular-1.html
+    ...embedRegular ? [createFontRelationship(embedRegular, "w:embedRegular")] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_embedBold-1.html
+    ...embedBold ? [createFontRelationship(embedBold, "w:embedBold")] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_embedItalic-1.html
+    ...embedItalic ? [createFontRelationship(embedItalic, "w:embedItalic")] : [],
+    // http://www.datypic.com/sc/ooxml/e-w_embedBoldItalic-1.html
+    ...embedBoldItalic ? [createFontRelationship(embedBoldItalic, "w:embedBoldItalic")] : []
+  ]
+});
+const createRegularFont = ({
+  name,
+  index,
+  fontKey,
+  characterSet
+}) => createFont({
+  name,
+  sig: {
+    usb0: "E0002AFF",
+    usb1: "C000247B",
+    usb2: "00000009",
+    usb3: "00000000",
+    csb0: "000001FF",
+    csb1: "00000000"
+  },
+  charset: characterSet,
+  family: "auto",
+  pitch: "variable",
+  embedRegular: {
+    fontKey,
+    id: `rId${index}`
   }
 });
-class PageBordersAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      display: "w:display",
-      offsetFrom: "w:offsetFrom",
-      zOrder: "w:zOrder"
-    });
-  }
-}
-class PageBorders extends IgnoreIfEmptyXmlComponent {
-  constructor(options) {
-    super("w:pgBorders");
-    if (!options) {
-      return this;
-    }
-    if (options.pageBorders) {
-      this.root.push(
-        new PageBordersAttributes({
-          display: options.pageBorders.display,
-          offsetFrom: options.pageBorders.offsetFrom,
-          zOrder: options.pageBorders.zOrder
-        })
-      );
-    } else {
-      this.root.push(new PageBordersAttributes({}));
-    }
-    if (options.pageBorderTop) {
-      this.root.push(new BorderElement("w:top", options.pageBorderTop));
-    }
-    if (options.pageBorderLeft) {
-      this.root.push(new BorderElement("w:left", options.pageBorderLeft));
-    }
-    if (options.pageBorderBottom) {
-      this.root.push(new BorderElement("w:bottom", options.pageBorderBottom));
-    }
-    if (options.pageBorderRight) {
-      this.root.push(new BorderElement("w:right", options.pageBorderRight));
-    }
-  }
-}
-class PageMargin extends XmlComponent {
-  constructor(top, right, bottom, left, header, footer, gutter) {
-    super("w:pgMar");
-    this.root.push(
-      new NextAttributeComponent({
-        top: { key: "w:top", value: signedTwipsMeasureValue(top) },
-        right: { key: "w:right", value: twipsMeasureValue(right) },
-        bottom: { key: "w:bottom", value: signedTwipsMeasureValue(bottom) },
-        left: { key: "w:left", value: twipsMeasureValue(left) },
-        header: { key: "w:header", value: twipsMeasureValue(header) },
-        footer: { key: "w:footer", value: twipsMeasureValue(footer) },
-        gutter: { key: "w:gutter", value: twipsMeasureValue(gutter) }
-      })
-    );
-  }
-}
-class PageNumberTypeAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      start: "w:start",
-      formatType: "w:fmt",
-      separator: "w:chapSep"
-    });
-  }
-}
-class PageNumberType extends XmlComponent {
-  constructor({ start, formatType, separator }) {
-    super("w:pgNumType");
-    this.root.push(
-      new PageNumberTypeAttributes({
-        start: start === void 0 ? void 0 : decimalNumber(start),
-        formatType,
-        separator
-      })
-    );
-  }
-}
-const PageOrientation = {
-  /**
-   * ## Portrait Mode
-   *
-   * Specifies that pages in this section shall be printed in portrait mode.
-   */
-  PORTRAIT: "portrait",
-  /**
-   * ## Landscape Mode
-   *
-   * Specifies that pages in this section shall be printed in landscape mode, which prints the page contents with a 90 degree rotation with respect to the normal page orientation.
-   */
-  LANDSCAPE: "landscape"
-};
-const createPageSize = ({ width, height, orientation, code: code2 }) => {
-  const widthTwips = twipsMeasureValue(width);
-  const heightTwips = twipsMeasureValue(height);
-  return new BuilderElement({
-    name: "w:pgSz",
+const createFontTable = (fonts) => (
+  // https://c-rex.net/projects/samples/ooxml/e1/Part4/OOXML_P4_DOCX_Font_topic_ID0ERNCU.html
+  // http://www.datypic.com/sc/ooxml/e-w_fonts.html
+  new BuilderElement({
+    name: "w:fonts",
     attributes: {
-      width: { key: "w:w", value: orientation === PageOrientation.LANDSCAPE ? heightTwips : widthTwips },
-      height: { key: "w:h", value: orientation === PageOrientation.LANDSCAPE ? widthTwips : heightTwips },
-      orientation: { key: "w:orient", value: orientation },
-      code: { key: "w:code", value: code2 }
-    }
-  });
-};
-class PageTextDirectionAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val" });
-  }
-}
-class PageTextDirection extends XmlComponent {
-  constructor(value) {
-    super("w:textDirection");
-    this.root.push(
-      new PageTextDirectionAttributes({
-        val: value
+      mc: { key: "xmlns:mc", value: "http://schemas.openxmlformats.org/markup-compatibility/2006" },
+      r: { key: "xmlns:r", value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships" },
+      w: { key: "xmlns:w", value: "http://schemas.openxmlformats.org/wordprocessingml/2006/main" },
+      w14: { key: "xmlns:w14", value: "http://schemas.microsoft.com/office/word/2010/wordml" },
+      w15: { key: "xmlns:w15", value: "http://schemas.microsoft.com/office/word/2012/wordml" },
+      w16cex: { key: "xmlns:w16cex", value: "http://schemas.microsoft.com/office/word/2018/wordml/cex" },
+      w16cid: { key: "xmlns:w16cid", value: "http://schemas.microsoft.com/office/word/2016/wordml/cid" },
+      w16: { key: "xmlns:w16", value: "http://schemas.microsoft.com/office/word/2018/wordml" },
+      w16sdtdh: { key: "xmlns:w16sdtdh", value: "http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash" },
+      w16se: { key: "xmlns:w16se", value: "http://schemas.microsoft.com/office/word/2015/wordml/symex" },
+      Ignorable: { key: "mc:Ignorable", value: "w14 w15 w16se w16cid w16 w16cex w16sdtdh" }
+    },
+    children: fonts.map(
+      (font, i) => createRegularFont({
+        name: font.name,
+        index: i + 1,
+        fontKey: font.fontKey
       })
-    );
-  }
-}
-class SectionTypeAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      val: "w:val"
-    });
-  }
-}
-class Type extends XmlComponent {
-  constructor(value) {
-    super("w:type");
-    this.root.push(new SectionTypeAttributes({ val: value }));
-  }
-}
-const sectionMarginDefaults = {
-  TOP: 1440,
-  RIGHT: 1440,
-  BOTTOM: 1440,
-  LEFT: 1440,
-  HEADER: 708,
-  FOOTER: 708,
-  GUTTER: 0
-};
-const sectionPageSizeDefaults = {
-  WIDTH: 11906,
-  HEIGHT: 16838,
-  ORIENTATION: PageOrientation.PORTRAIT
-};
-class SectionProperties extends XmlComponent {
-  constructor({
-    page: {
-      size: {
-        width = sectionPageSizeDefaults.WIDTH,
-        height = sectionPageSizeDefaults.HEIGHT,
-        orientation = sectionPageSizeDefaults.ORIENTATION
-      } = {},
-      margin: {
-        top = sectionMarginDefaults.TOP,
-        right = sectionMarginDefaults.RIGHT,
-        bottom = sectionMarginDefaults.BOTTOM,
-        left = sectionMarginDefaults.LEFT,
-        header = sectionMarginDefaults.HEADER,
-        footer = sectionMarginDefaults.FOOTER,
-        gutter = sectionMarginDefaults.GUTTER
-      } = {},
-      pageNumbers = {},
-      borders,
-      textDirection
-    } = {},
-    grid: { linePitch = 360, charSpace, type: gridType } = {},
-    headerWrapperGroup = {},
-    footerWrapperGroup = {},
-    lineNumbers,
-    titlePage,
-    verticalAlign,
-    column,
-    type: type2
-  } = {}) {
-    super("w:sectPr");
-    this.addHeaderFooterGroup(HeaderFooterType.HEADER, headerWrapperGroup);
-    this.addHeaderFooterGroup(HeaderFooterType.FOOTER, footerWrapperGroup);
-    if (type2) {
-      this.root.push(new Type(type2));
-    }
-    this.root.push(createPageSize({ width, height, orientation }));
-    this.root.push(new PageMargin(top, right, bottom, left, header, footer, gutter));
-    if (borders) {
-      this.root.push(new PageBorders(borders));
-    }
-    if (lineNumbers) {
-      this.root.push(createLineNumberType(lineNumbers));
-    }
-    this.root.push(new PageNumberType(pageNumbers));
-    if (column) {
-      this.root.push(new Columns(column));
-    }
-    if (verticalAlign) {
-      this.root.push(new VerticalAlignElement(verticalAlign));
-    }
-    if (titlePage !== void 0) {
-      this.root.push(new OnOffElement("w:titlePg", titlePage));
-    }
-    if (textDirection) {
-      this.root.push(new PageTextDirection(textDirection));
-    }
-    this.root.push(createDocumentGrid({ linePitch, charSpace, type: gridType }));
-  }
-  addHeaderFooterGroup(type2, group2) {
-    if (group2.default) {
-      this.root.push(
-        new HeaderFooterReference(type2, {
-          type: HeaderFooterReferenceType.DEFAULT,
-          id: group2.default.View.ReferenceId
-        })
-      );
-    }
-    if (group2.first) {
-      this.root.push(
-        new HeaderFooterReference(type2, {
-          type: HeaderFooterReferenceType.FIRST,
-          id: group2.first.View.ReferenceId
-        })
-      );
-    }
-    if (group2.even) {
-      this.root.push(
-        new HeaderFooterReference(type2, {
-          type: HeaderFooterReferenceType.EVEN,
-          id: group2.even.View.ReferenceId
-        })
-      );
-    }
-  }
-}
-class Body extends XmlComponent {
-  constructor() {
-    super("w:body");
-    __publicField2(this, "sections", []);
-  }
-  /**
-   * Adds new section properties.
-   * Note: Previous section is created in paragraph after the current element, and then new section will be added.
-   * The spec says:
-   *  - section element should be in the last paragraph of the section
-   *  - last section should be direct child of body
-   *
-   * @param options new section options
-   */
-  addSection(options) {
-    const currentSection = this.sections.pop();
-    this.root.push(this.createSectionParagraph(currentSection));
-    this.sections.push(new SectionProperties(options));
-  }
-  prepForXml(context2) {
-    if (this.sections.length === 1) {
-      this.root.splice(0, 1);
-      this.root.push(this.sections.pop());
-    }
-    return super.prepForXml(context2);
-  }
-  push(component) {
-    this.root.push(component);
-  }
-  createSectionParagraph(section) {
-    const paragraph2 = new Paragraph({});
-    const properties = new ParagraphProperties({});
-    properties.push(section);
-    paragraph2.addChildElement(properties);
-    return paragraph2;
-  }
-}
-const DocumentAttributeNamespaces = {
-  wpc: "http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas",
-  mc: "http://schemas.openxmlformats.org/markup-compatibility/2006",
-  o: "urn:schemas-microsoft-com:office:office",
-  r: "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-  m: "http://schemas.openxmlformats.org/officeDocument/2006/math",
-  v: "urn:schemas-microsoft-com:vml",
-  wp14: "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing",
-  wp: "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-  w10: "urn:schemas-microsoft-com:office:word",
-  w: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-  w14: "http://schemas.microsoft.com/office/word/2010/wordml",
-  w15: "http://schemas.microsoft.com/office/word/2012/wordml",
-  wpg: "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup",
-  wpi: "http://schemas.microsoft.com/office/word/2010/wordprocessingInk",
-  wne: "http://schemas.microsoft.com/office/word/2006/wordml",
-  wps: "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
-  cp: "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
-  dc: "http://purl.org/dc/elements/1.1/",
-  dcterms: "http://purl.org/dc/terms/",
-  dcmitype: "http://purl.org/dc/dcmitype/",
-  xsi: "http://www.w3.org/2001/XMLSchema-instance",
-  cx: "http://schemas.microsoft.com/office/drawing/2014/chartex",
-  cx1: "http://schemas.microsoft.com/office/drawing/2015/9/8/chartex",
-  cx2: "http://schemas.microsoft.com/office/drawing/2015/10/21/chartex",
-  cx3: "http://schemas.microsoft.com/office/drawing/2016/5/9/chartex",
-  cx4: "http://schemas.microsoft.com/office/drawing/2016/5/10/chartex",
-  cx5: "http://schemas.microsoft.com/office/drawing/2016/5/11/chartex",
-  cx6: "http://schemas.microsoft.com/office/drawing/2016/5/12/chartex",
-  cx7: "http://schemas.microsoft.com/office/drawing/2016/5/13/chartex",
-  cx8: "http://schemas.microsoft.com/office/drawing/2016/5/14/chartex",
-  aink: "http://schemas.microsoft.com/office/drawing/2016/ink",
-  am3d: "http://schemas.microsoft.com/office/drawing/2017/model3d",
-  w16cex: "http://schemas.microsoft.com/office/word/2018/wordml/cex",
-  w16cid: "http://schemas.microsoft.com/office/word/2016/wordml/cid",
-  w16: "http://schemas.microsoft.com/office/word/2018/wordml",
-  w16sdtdh: "http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash",
-  w16se: "http://schemas.microsoft.com/office/word/2015/wordml/symex"
-};
-class DocumentAttributes extends XmlAttributeComponent {
-  constructor(ns, Ignorable) {
-    super(__spreadValues({ Ignorable }, Object.fromEntries(ns.map((n) => [n, DocumentAttributeNamespaces[n]]))));
-    __publicField2(this, "xmlKeys", __spreadValues({
-      Ignorable: "mc:Ignorable"
-    }, Object.fromEntries(Object.keys(DocumentAttributeNamespaces).map((key) => [key, `xmlns:${key}`]))));
-  }
-}
-class DocumentBackgroundAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      color: "w:color",
-      themeColor: "w:themeColor",
-      themeShade: "w:themeShade",
-      themeTint: "w:themeTint"
-    });
-  }
-}
-class DocumentBackground extends XmlComponent {
+    )
+  })
+);
+class FontWrapper {
   constructor(options) {
-    super("w:background");
-    this.root.push(
-      new DocumentBackgroundAttributes({
-        color: options.color === void 0 ? void 0 : hexColorValue(options.color),
-        themeColor: options.themeColor,
-        themeShade: options.themeShade === void 0 ? void 0 : uCharHexNumber(options.themeShade),
-        themeTint: options.themeTint === void 0 ? void 0 : uCharHexNumber(options.themeTint)
-      })
-    );
-  }
-}
-class Document extends XmlComponent {
-  constructor(options) {
-    super("w:document");
-    __publicField2(this, "body");
-    this.root.push(
-      new DocumentAttributes(
-        [
-          "wpc",
-          "mc",
-          "o",
-          "r",
-          "m",
-          "v",
-          "wp14",
-          "wp",
-          "w10",
-          "w",
-          "w14",
-          "w15",
-          "wpg",
-          "wpi",
-          "wne",
-          "wps",
-          "cx",
-          "cx1",
-          "cx2",
-          "cx3",
-          "cx4",
-          "cx5",
-          "cx6",
-          "cx7",
-          "cx8",
-          "aink",
-          "am3d",
-          "w16cex",
-          "w16cid",
-          "w16",
-          "w16sdtdh",
-          "w16se"
-        ],
-        "w14 w15 wp14"
-      )
-    );
-    this.body = new Body();
-    if (options.background) {
-      this.root.push(new DocumentBackground(options.background));
-    }
-    this.root.push(this.body);
-  }
-  add(item) {
-    this.body.push(item);
-    return this;
-  }
-  get Body() {
-    return this.body;
-  }
-}
-class DocumentWrapper {
-  constructor(options) {
-    __publicField2(this, "document");
-    __publicField2(this, "relationships");
-    this.document = new Document(options);
+    __publicField(this, "fontTable");
+    __publicField(this, "relationships");
+    __publicField(this, "fontOptionsWithKey", []);
+    this.options = options;
+    this.fontOptionsWithKey = options.map((o) => __spreadProps(__spreadValues({}, o), { fontKey: uniqueUuid() }));
+    this.fontTable = createFontTable(this.fontOptionsWithKey);
     this.relationships = new Relationships();
+    for (let i = 0; i < options.length; i++) {
+      this.relationships.addRelationship(
+        i + 1,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/font",
+        `fonts/${options[i].name}.odttf`
+      );
+    }
   }
   get View() {
-    return this.document;
+    return this.fontTable;
   }
   get Relationships() {
     return this.relationships;
   }
 }
-class WordWrapAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val" });
+const createWordWrap = () => new BuilderElement({
+  name: "w:wordWrap",
+  attributes: {
+    val: { key: "w:val", value: 0 }
   }
-}
-class WordWrap extends XmlComponent {
-  constructor() {
-    super("w:wordWrap");
-    this.root.push(new WordWrapAttributes({ val: 0 }));
-  }
-}
+});
 const createFrameProperties = (options) => {
   var _a, _b;
   return new BuilderElement({
@@ -47111,26 +46973,26 @@ const createFrameProperties = (options) => {
 class ParagraphProperties extends IgnoreIfEmptyXmlComponent {
   constructor(options) {
     var _a, _b;
-    super("w:pPr");
-    __publicField2(this, "numberingReferences", []);
+    super("w:pPr", options == null ? void 0 : options.includeIfEmpty);
+    __publicField(this, "numberingReferences", []);
     if (!options) {
       return this;
     }
     if (options.heading) {
-      this.push(new Style$1(options.heading));
+      this.push(createParagraphStyle(options.heading));
     }
     if (options.bullet) {
-      this.push(new Style$1("ListParagraph"));
+      this.push(createParagraphStyle("ListParagraph"));
     }
     if (options.numbering) {
       if (!options.style && !options.heading) {
         if (!options.numbering.custom) {
-          this.push(new Style$1("ListParagraph"));
+          this.push(createParagraphStyle("ListParagraph"));
         }
       }
     }
     if (options.style) {
-      this.push(new Style$1(options.style));
+      this.push(createParagraphStyle(options.style));
     }
     if (options.keepNext !== void 0) {
       this.push(new OnOffElement("w:keepNext", options.keepNext));
@@ -47166,10 +47028,10 @@ class ParagraphProperties extends IgnoreIfEmptyXmlComponent {
       this.push(new ThematicBreak());
     }
     if (options.shading) {
-      this.push(new Shading(options.shading));
+      this.push(createShading(options.shading));
     }
     if (options.wordWrap) {
-      this.push(new WordWrap());
+      this.push(createWordWrap());
     }
     if (options.overflowPunctuation) {
       this.push(new OnOffElement("w:overflowPunct", options.overflowPunctuation));
@@ -47180,25 +47042,25 @@ class ParagraphProperties extends IgnoreIfEmptyXmlComponent {
       ...options.leftTabStop !== void 0 ? [{ type: TabStopType.LEFT, position: options.leftTabStop }] : []
     ];
     if (tabDefinitions.length > 0) {
-      this.push(new TabStop(tabDefinitions));
+      this.push(createTabStop(tabDefinitions));
     }
     if (options.bidirectional !== void 0) {
       this.push(new OnOffElement("w:bidi", options.bidirectional));
     }
     if (options.spacing) {
-      this.push(new Spacing(options.spacing));
+      this.push(createSpacing(options.spacing));
     }
     if (options.indent) {
-      this.push(new Indent(options.indent));
+      this.push(createIndent(options.indent));
     }
     if (options.contextualSpacing !== void 0) {
       this.push(new OnOffElement("w:contextualSpacing", options.contextualSpacing));
     }
     if (options.alignment) {
-      this.push(new Alignment(options.alignment));
+      this.push(createAlignment(options.alignment));
     }
     if (options.outlineLevel !== void 0) {
-      this.push(new OutlineLevel(options.outlineLevel));
+      this.push(createOutlineLevel(options.outlineLevel));
     }
     if (options.suppressLineNumbers !== void 0) {
       this.push(new OnOffElement("w:suppressLineNumbers", options.suppressLineNumbers));
@@ -47207,14 +47069,31 @@ class ParagraphProperties extends IgnoreIfEmptyXmlComponent {
       this.push(new OnOffElement("w:autoSpaceDN", options.autoSpaceEastAsianText));
     }
     if (options.run) {
-      this.push(new RunProperties(options.run));
+      this.push(new ParagraphRunProperties(options.run));
+    }
+    if (options.revision) {
+      this.push(new ParagraphPropertiesChange(options.revision));
     }
   }
+  /**
+   * Adds a property element to the paragraph properties.
+   *
+   * @param item - The XML component to add to the paragraph properties
+   */
   push(item) {
     this.root.push(item);
   }
+  /**
+   * Prepares the paragraph properties for XML serialization.
+   *
+   * This method creates concrete numbering instances for any numbering references
+   * before the properties are converted to XML.
+   *
+   * @param context - The XML context containing document and file information
+   * @returns The prepared XML object, or undefined if the component should be ignored
+   */
   prepForXml(context2) {
-    if (context2.viewWrapper instanceof DocumentWrapper) {
+    if (!(context2.viewWrapper instanceof FontWrapper)) {
       for (const reference of this.numberingReferences) {
         context2.file.Numbering.createConcreteNumberingInstance(reference.reference, reference.instance);
       }
@@ -47222,10 +47101,23 @@ class ParagraphProperties extends IgnoreIfEmptyXmlComponent {
     return super.prepForXml(context2);
   }
 }
+class ParagraphPropertiesChange extends XmlComponent {
+  constructor(options) {
+    super("w:pPrChange");
+    this.root.push(
+      new ChangeAttributes({
+        id: options.id,
+        author: options.author,
+        date: options.date
+      })
+    );
+    this.root.push(new ParagraphProperties(__spreadProps(__spreadValues({}, options), { includeIfEmpty: true })));
+  }
+}
 class Paragraph extends FileChild {
   constructor(options) {
     super("w:p");
-    __publicField2(this, "properties");
+    __publicField(this, "properties");
     if (typeof options === "string") {
       this.properties = new ParagraphProperties({});
       this.root.push(this.properties);
@@ -47256,7 +47148,7 @@ class Paragraph extends FileChild {
       if (element2 instanceof ExternalHyperlink) {
         const index = this.root.indexOf(element2);
         const concreteHyperlink = new ConcreteHyperlink(element2.options.children, uniqueId());
-        context2.viewWrapper.Relationships.createRelationship(
+        context2.viewWrapper.Relationships.addRelationship(
           concreteHyperlink.linkId,
           "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
           element2.options.link,
@@ -47272,6 +47164,20 @@ class Paragraph extends FileChild {
     return this;
   }
 }
+const VerticalAlignTable = {
+  TOP: "top",
+  CENTER: "center",
+  BOTTOM: "bottom"
+};
+__spreadProps(__spreadValues({}, VerticalAlignTable), {
+  BOTH: "both"
+});
+const createVerticalAlign = (value) => new BuilderElement({
+  name: "w:vAlign",
+  attributes: {
+    verticalAlign: { key: "w:val", value }
+  }
+});
 const NONE_BORDER = {
   style: BorderStyle.NONE,
   size: 0,
@@ -47284,40 +47190,17 @@ const DEFAULT_BORDER = {
 };
 class TableBorders extends XmlComponent {
   constructor(options) {
+    var _a, _b, _c, _d, _e, _f;
     super("w:tblBorders");
-    if (options.top) {
-      this.root.push(new BorderElement("w:top", options.top));
-    } else {
-      this.root.push(new BorderElement("w:top", DEFAULT_BORDER));
-    }
-    if (options.left) {
-      this.root.push(new BorderElement("w:left", options.left));
-    } else {
-      this.root.push(new BorderElement("w:left", DEFAULT_BORDER));
-    }
-    if (options.bottom) {
-      this.root.push(new BorderElement("w:bottom", options.bottom));
-    } else {
-      this.root.push(new BorderElement("w:bottom", DEFAULT_BORDER));
-    }
-    if (options.right) {
-      this.root.push(new BorderElement("w:right", options.right));
-    } else {
-      this.root.push(new BorderElement("w:right", DEFAULT_BORDER));
-    }
-    if (options.insideHorizontal) {
-      this.root.push(new BorderElement("w:insideH", options.insideHorizontal));
-    } else {
-      this.root.push(new BorderElement("w:insideH", DEFAULT_BORDER));
-    }
-    if (options.insideVertical) {
-      this.root.push(new BorderElement("w:insideV", options.insideVertical));
-    } else {
-      this.root.push(new BorderElement("w:insideV", DEFAULT_BORDER));
-    }
+    this.root.push(createBorderElement("w:top", (_a = options.top) != null ? _a : DEFAULT_BORDER));
+    this.root.push(createBorderElement("w:left", (_b = options.left) != null ? _b : DEFAULT_BORDER));
+    this.root.push(createBorderElement("w:bottom", (_c = options.bottom) != null ? _c : DEFAULT_BORDER));
+    this.root.push(createBorderElement("w:right", (_d = options.right) != null ? _d : DEFAULT_BORDER));
+    this.root.push(createBorderElement("w:insideH", (_e = options.insideHorizontal) != null ? _e : DEFAULT_BORDER));
+    this.root.push(createBorderElement("w:insideV", (_f = options.insideVertical) != null ? _f : DEFAULT_BORDER));
   }
 }
-__publicField2(TableBorders, "NONE", {
+__publicField(TableBorders, "NONE", {
   top: NONE_BORDER,
   bottom: NONE_BORDER,
   left: NONE_BORDER,
@@ -47328,7 +47211,7 @@ __publicField2(TableBorders, "NONE", {
 class AppPropertiesAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns",
       vt: "xmlns:vt"
     });
@@ -47348,51 +47231,25 @@ class AppProperties extends XmlComponent {
 class ContentTypeAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns"
     });
   }
 }
-class DefaultAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      contentType: "ContentType",
-      extension: "Extension"
-    });
+const createDefault = (contentType, extension) => new BuilderElement({
+  name: "Default",
+  attributes: {
+    contentType: { key: "ContentType", value: contentType },
+    extension: { key: "Extension", value: extension }
   }
-}
-class Default extends XmlComponent {
-  constructor(contentType, extension) {
-    super("Default");
-    this.root.push(
-      new DefaultAttributes({
-        contentType,
-        extension
-      })
-    );
+});
+const createOverride = (contentType, partName) => new BuilderElement({
+  name: "Override",
+  attributes: {
+    contentType: { key: "ContentType", value: contentType },
+    partName: { key: "PartName", value: partName }
   }
-}
-class OverrideAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      contentType: "ContentType",
-      partName: "PartName"
-    });
-  }
-}
-class Override extends XmlComponent {
-  constructor(contentType, partName) {
-    super("Override");
-    this.root.push(
-      new OverrideAttributes({
-        contentType,
-        partName
-      })
-    );
-  }
-}
+});
 class ContentTypes extends XmlComponent {
   constructor() {
     super("Types");
@@ -47401,37 +47258,101 @@ class ContentTypes extends XmlComponent {
         xmlns: "http://schemas.openxmlformats.org/package/2006/content-types"
       })
     );
-    this.root.push(new Default("image/png", "png"));
-    this.root.push(new Default("image/jpeg", "jpeg"));
-    this.root.push(new Default("image/jpeg", "jpg"));
-    this.root.push(new Default("image/bmp", "bmp"));
-    this.root.push(new Default("image/gif", "gif"));
-    this.root.push(new Default("image/svg+xml", "svg"));
-    this.root.push(new Default("application/vnd.openxmlformats-package.relationships+xml", "rels"));
-    this.root.push(new Default("application/xml", "xml"));
-    this.root.push(new Default("application/vnd.openxmlformats-officedocument.obfuscatedFont", "odttf"));
+    this.root.push(createDefault("image/png", "png"));
+    this.root.push(createDefault("image/jpeg", "jpeg"));
+    this.root.push(createDefault("image/jpeg", "jpg"));
+    this.root.push(createDefault("image/bmp", "bmp"));
+    this.root.push(createDefault("image/gif", "gif"));
+    this.root.push(createDefault("image/svg+xml", "svg"));
+    this.root.push(createDefault("application/vnd.openxmlformats-package.relationships+xml", "rels"));
+    this.root.push(createDefault("application/xml", "xml"));
+    this.root.push(createDefault("application/vnd.openxmlformats-officedocument.obfuscatedFont", "odttf"));
     this.root.push(
-      new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml", "/word/document.xml")
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml", "/word/document.xml")
     );
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml", "/word/styles.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-package.core-properties+xml", "/docProps/core.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.custom-properties+xml", "/docProps/custom.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.extended-properties+xml", "/docProps/app.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", "/word/numbering.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml", "/word/footnotes.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml", "/word/settings.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml", "/word/comments.xml"));
-    this.root.push(new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml", "/word/fontTable.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml", "/word/styles.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-package.core-properties+xml", "/docProps/core.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.custom-properties+xml", "/docProps/custom.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.extended-properties+xml", "/docProps/app.xml"));
+    this.root.push(
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", "/word/numbering.xml")
+    );
+    this.root.push(
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml", "/word/footnotes.xml")
+    );
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml", "/word/endnotes.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml", "/word/settings.xml"));
+    this.root.push(createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml", "/word/comments.xml"));
+    this.root.push(
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml", "/word/fontTable.xml")
+    );
   }
+  /**
+   * Registers a footer part in the content types.
+   *
+   * @param index - Footer index number (e.g., 1 for footer1.xml)
+   */
   addFooter(index) {
     this.root.push(
-      new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml", `/word/footer${index}.xml`)
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml", `/word/footer${index}.xml`)
     );
   }
+  /**
+   * Registers a header part in the content types.
+   *
+   * @param index - Header index number (e.g., 1 for header1.xml)
+   */
   addHeader(index) {
     this.root.push(
-      new Override("application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml", `/word/header${index}.xml`)
+      createOverride("application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml", `/word/header${index}.xml`)
     );
+  }
+}
+const DocumentAttributeNamespaces = {
+  wpc: "http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas",
+  mc: "http://schemas.openxmlformats.org/markup-compatibility/2006",
+  o: "urn:schemas-microsoft-com:office:office",
+  r: "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+  m: "http://schemas.openxmlformats.org/officeDocument/2006/math",
+  v: "urn:schemas-microsoft-com:vml",
+  wp14: "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing",
+  wp: "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+  w10: "urn:schemas-microsoft-com:office:word",
+  w: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+  w14: "http://schemas.microsoft.com/office/word/2010/wordml",
+  w15: "http://schemas.microsoft.com/office/word/2012/wordml",
+  wpg: "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup",
+  wpi: "http://schemas.microsoft.com/office/word/2010/wordprocessingInk",
+  wne: "http://schemas.microsoft.com/office/word/2006/wordml",
+  wps: "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+  cp: "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+  dc: "http://purl.org/dc/elements/1.1/",
+  dcterms: "http://purl.org/dc/terms/",
+  dcmitype: "http://purl.org/dc/dcmitype/",
+  xsi: "http://www.w3.org/2001/XMLSchema-instance",
+  cx: "http://schemas.microsoft.com/office/drawing/2014/chartex",
+  cx1: "http://schemas.microsoft.com/office/drawing/2015/9/8/chartex",
+  cx2: "http://schemas.microsoft.com/office/drawing/2015/10/21/chartex",
+  cx3: "http://schemas.microsoft.com/office/drawing/2016/5/9/chartex",
+  cx4: "http://schemas.microsoft.com/office/drawing/2016/5/10/chartex",
+  cx5: "http://schemas.microsoft.com/office/drawing/2016/5/11/chartex",
+  cx6: "http://schemas.microsoft.com/office/drawing/2016/5/12/chartex",
+  cx7: "http://schemas.microsoft.com/office/drawing/2016/5/13/chartex",
+  cx8: "http://schemas.microsoft.com/office/drawing/2016/5/14/chartex",
+  aink: "http://schemas.microsoft.com/office/drawing/2016/ink",
+  am3d: "http://schemas.microsoft.com/office/drawing/2017/model3d",
+  w16cex: "http://schemas.microsoft.com/office/word/2018/wordml/cex",
+  w16cid: "http://schemas.microsoft.com/office/word/2016/wordml/cid",
+  w16: "http://schemas.microsoft.com/office/word/2018/wordml",
+  w16sdtdh: "http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash",
+  w16se: "http://schemas.microsoft.com/office/word/2015/wordml/symex"
+};
+class DocumentAttributes extends XmlAttributeComponent {
+  constructor(ns, Ignorable) {
+    super(__spreadValues({ Ignorable }, Object.fromEntries(ns.map((n) => [n, DocumentAttributeNamespaces[n]]))));
+    __publicField(this, "xmlKeys", __spreadValues({
+      Ignorable: "mc:Ignorable"
+    }, Object.fromEntries(Object.keys(DocumentAttributeNamespaces).map((key) => [key, `xmlns:${key}`]))));
   }
 }
 class CoreProperties extends XmlComponent {
@@ -47466,7 +47387,7 @@ class CoreProperties extends XmlComponent {
 class TimestampElementProperties extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { type: "xsi:type" });
+    __publicField(this, "xmlKeys", { type: "xsi:type" });
   }
 }
 class TimestampElement extends XmlComponent {
@@ -47483,7 +47404,7 @@ class TimestampElement extends XmlComponent {
 class CustomPropertiesAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       xmlns: "xmlns",
       vt: "xmlns:vt"
     });
@@ -47492,8 +47413,8 @@ class CustomPropertiesAttributes extends XmlAttributeComponent {
 class CustomPropertyAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      fmtid: "fmtid",
+    __publicField(this, "xmlKeys", {
+      formatId: "fmtid",
       pid: "pid",
       name: "name"
     });
@@ -47504,7 +47425,7 @@ class CustomProperty extends XmlComponent {
     super("property");
     this.root.push(
       new CustomPropertyAttributes({
-        fmtid: "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}",
+        formatId: "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}",
         pid: id.toString(),
         name: properties.name
       })
@@ -47521,8 +47442,8 @@ class CustomPropertyValue extends XmlComponent {
 class CustomProperties extends XmlComponent {
   constructor(properties) {
     super("Properties");
-    __publicField2(this, "nextId");
-    __publicField2(this, "properties", []);
+    __publicField(this, "nextId");
+    __publicField(this, "properties", []);
     this.root.push(
       new CustomPropertiesAttributes({
         xmlns: "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties",
@@ -47542,139 +47463,613 @@ class CustomProperties extends XmlComponent {
     this.properties.push(new CustomProperty(this.nextId++, property2));
   }
 }
-const createFontRelationship = ({ id, fontKey, subsetted }, name) => new BuilderElement({
-  name,
-  attributes: __spreadValues({
-    id: { key: "r:id", value: id }
-  }, fontKey ? { fontKey: { key: "w:fontKey", value: `{${fontKey}}` } } : {}),
-  children: [...subsetted ? [new OnOffElement("w:subsetted", subsetted)] : []]
-});
-const createFont = ({
-  name,
-  altName,
-  panose1,
-  charset,
-  family,
-  notTrueType,
-  pitch,
-  sig: sig2,
-  embedRegular,
-  embedBold,
-  embedItalic,
-  embedBoldItalic
-}) => (
-  // http://www.datypic.com/sc/ooxml/e-w_font-1.html
-  new BuilderElement({
-    name: "w:font",
-    attributes: {
-      name: { key: "w:name", value: name }
-    },
-    children: [
-      // http://www.datypic.com/sc/ooxml/e-w_altName-1.html
-      ...altName ? [createStringElement("w:altName", altName)] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_panose1-1.html
-      ...panose1 ? [createStringElement("w:panose1", panose1)] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_charset-1.html
-      ...charset ? [createStringElement("w:charset", charset)] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_family-1.html
-      ...[createStringElement("w:family", family)],
-      // http://www.datypic.com/sc/ooxml/e-w_notTrueType-1.html
-      ...notTrueType ? [new OnOffElement("w:notTrueType", notTrueType)] : [],
-      ...[createStringElement("w:pitch", pitch)],
-      // http://www.datypic.com/sc/ooxml/e-w_sig-1.html
-      ...sig2 ? [
-        new BuilderElement({
-          name: "w:sig",
-          attributes: {
-            usb0: { key: "w:usb0", value: sig2.usb0 },
-            usb1: { key: "w:usb1", value: sig2.usb1 },
-            usb2: { key: "w:usb2", value: sig2.usb2 },
-            usb3: { key: "w:usb3", value: sig2.usb3 },
-            csb0: { key: "w:csb0", value: sig2.csb0 },
-            csb1: { key: "w:csb1", value: sig2.csb1 }
-          }
-        })
-      ] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_embedRegular-1.html
-      ...embedRegular ? [createFontRelationship(embedRegular, "w:embedRegular")] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_embedBold-1.html
-      ...embedBold ? [createFontRelationship(embedBold, "w:embedBold")] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_embedItalic-1.html
-      ...embedItalic ? [createFontRelationship(embedItalic, "w:embedItalic")] : [],
-      // http://www.datypic.com/sc/ooxml/e-w_embedBoldItalic-1.html
-      ...embedBoldItalic ? [createFontRelationship(embedBoldItalic, "w:embedBoldItalic")] : []
-    ]
-  })
-);
-const createRegularFont = ({
-  name,
-  index,
-  fontKey,
-  characterSet
-}) => createFont({
-  name,
-  sig: {
-    usb0: "E0002AFF",
-    usb1: "C000247B",
-    usb2: "00000009",
-    usb3: "00000000",
-    csb0: "000001FF",
-    csb1: "00000000"
+const createColumns = ({ space, count, separate, equalWidth, children }) => new BuilderElement({
+  name: "w:cols",
+  attributes: {
+    space: { key: "w:space", value: space === void 0 ? void 0 : twipsMeasureValue(space) },
+    count: { key: "w:num", value: count === void 0 ? void 0 : decimalNumber(count) },
+    separate: { key: "w:sep", value: separate },
+    equalWidth: { key: "w:equalWidth", value: equalWidth }
   },
-  charset: characterSet,
-  family: "auto",
-  pitch: "variable",
-  embedRegular: {
-    fontKey,
-    id: `rId${index}`
+  children: !equalWidth && children ? children : void 0
+});
+const createDocumentGrid = ({ type: type2, linePitch, charSpace }) => new BuilderElement({
+  name: "w:docGrid",
+  attributes: {
+    type: { key: "w:type", value: type2 },
+    linePitch: { key: "w:linePitch", value: decimalNumber(linePitch) },
+    charSpace: { key: "w:charSpace", value: charSpace ? decimalNumber(charSpace) : void 0 }
   }
 });
-const createFontTable = (fonts) => (
-  // https://c-rex.net/projects/samples/ooxml/e1/Part4/OOXML_P4_DOCX_Font_topic_ID0ERNCU.html
-  // http://www.datypic.com/sc/ooxml/e-w_fonts.html
-  new BuilderElement({
-    name: "w:fonts",
-    attributes: {
-      mc: { key: "xmlns:mc", value: "http://schemas.openxmlformats.org/markup-compatibility/2006" },
-      r: { key: "xmlns:r", value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships" },
-      w: { key: "xmlns:w", value: "http://schemas.openxmlformats.org/wordprocessingml/2006/main" },
-      w14: { key: "xmlns:w14", value: "http://schemas.microsoft.com/office/word/2010/wordml" },
-      w15: { key: "xmlns:w15", value: "http://schemas.microsoft.com/office/word/2012/wordml" },
-      w16cex: { key: "xmlns:w16cex", value: "http://schemas.microsoft.com/office/word/2018/wordml/cex" },
-      w16cid: { key: "xmlns:w16cid", value: "http://schemas.microsoft.com/office/word/2016/wordml/cid" },
-      w16: { key: "xmlns:w16", value: "http://schemas.microsoft.com/office/word/2018/wordml" },
-      w16sdtdh: { key: "xmlns:w16sdtdh", value: "http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash" },
-      w16se: { key: "xmlns:w16se", value: "http://schemas.microsoft.com/office/word/2015/wordml/symex" },
-      Ignorable: { key: "mc:Ignorable", value: "w14 w15 w16se w16cid w16 w16cex w16sdtdh" }
-    },
-    children: fonts.map(
-      (font, i) => createRegularFont({
-        name: font.name,
-        index: i + 1,
-        fontKey: font.fontKey
-      })
-    )
-  })
-);
-class FontWrapper {
+const HeaderFooterReferenceType = {
+  /** Specifies that this header or footer shall appear on every page in this section which is not overridden with a specific `even` or `first` page header/footer. In a section with all three types specified, this type shall be used on all odd numbered pages (counting from the `first` page in the section, not the section numbering). */
+  DEFAULT: "default",
+  /** Specifies that this header or footer shall appear on the first page in this section. The appearance of this header or footer is contingent on the setting of the `titlePg` element (§2.10.6). */
+  FIRST: "first",
+  /** Specifies that this header or footer shall appear on all even numbered pages in this section (counting from the first page in the section, not the section numbering). The appearance of this header or footer is contingent on the setting of the `evenAndOddHeaders` element (§2.10.1). */
+  EVEN: "even"
+};
+const HeaderFooterType = {
+  HEADER: "w:headerReference",
+  FOOTER: "w:footerReference"
+};
+const createHeaderFooterReference = (type2, options) => new BuilderElement({
+  name: type2,
+  attributes: {
+    type: { key: "w:type", value: options.type || HeaderFooterReferenceType.DEFAULT },
+    id: { key: "r:id", value: `rId${options.id}` }
+  }
+});
+const createLineNumberType = ({ countBy: countBy2, start, restart, distance }) => new BuilderElement({
+  name: "w:lnNumType",
+  attributes: {
+    countBy: { key: "w:countBy", value: countBy2 === void 0 ? void 0 : decimalNumber(countBy2) },
+    start: { key: "w:start", value: start === void 0 ? void 0 : decimalNumber(start) },
+    restart: { key: "w:restart", value: restart },
+    distance: {
+      key: "w:distance",
+      value: distance === void 0 ? void 0 : twipsMeasureValue(distance)
+    }
+  }
+});
+class PageBordersAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      display: "w:display",
+      offsetFrom: "w:offsetFrom",
+      zOrder: "w:zOrder"
+    });
+  }
+}
+class PageBorders extends IgnoreIfEmptyXmlComponent {
   constructor(options) {
-    __publicField2(this, "fontTable");
-    __publicField2(this, "relationships");
-    __publicField2(this, "fontOptionsWithKey", []);
-    this.options = options;
-    this.fontOptionsWithKey = options.map((o) => __spreadProps(__spreadValues({}, o), { fontKey: uniqueUuid() }));
-    this.fontTable = createFontTable(this.fontOptionsWithKey);
-    this.relationships = new Relationships();
-    for (let i = 0; i < options.length; i++) {
-      this.relationships.createRelationship(
-        i + 1,
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/font",
-        `fonts/${options[i].name}.odttf`
+    super("w:pgBorders");
+    if (!options) {
+      return this;
+    }
+    if (options.pageBorders) {
+      this.root.push(
+        new PageBordersAttributes({
+          display: options.pageBorders.display,
+          offsetFrom: options.pageBorders.offsetFrom,
+          zOrder: options.pageBorders.zOrder
+        })
+      );
+    } else {
+      this.root.push(new PageBordersAttributes({}));
+    }
+    if (options.pageBorderTop) {
+      this.root.push(createBorderElement("w:top", options.pageBorderTop));
+    }
+    if (options.pageBorderLeft) {
+      this.root.push(createBorderElement("w:left", options.pageBorderLeft));
+    }
+    if (options.pageBorderBottom) {
+      this.root.push(createBorderElement("w:bottom", options.pageBorderBottom));
+    }
+    if (options.pageBorderRight) {
+      this.root.push(createBorderElement("w:right", options.pageBorderRight));
+    }
+  }
+}
+const createPageMargin = (top, right, bottom, left, header, footer, gutter) => new BuilderElement({
+  name: "w:pgMar",
+  attributes: {
+    top: { key: "w:top", value: signedTwipsMeasureValue(top) },
+    right: { key: "w:right", value: twipsMeasureValue(right) },
+    bottom: { key: "w:bottom", value: signedTwipsMeasureValue(bottom) },
+    left: { key: "w:left", value: twipsMeasureValue(left) },
+    header: { key: "w:header", value: twipsMeasureValue(header) },
+    footer: { key: "w:footer", value: twipsMeasureValue(footer) },
+    gutter: { key: "w:gutter", value: twipsMeasureValue(gutter) }
+  }
+});
+const createPageNumberType = ({ start, formatType, separator }) => new BuilderElement({
+  name: "w:pgNumType",
+  attributes: {
+    start: { key: "w:start", value: start === void 0 ? void 0 : decimalNumber(start) },
+    formatType: { key: "w:fmt", value: formatType },
+    separator: { key: "w:chapSep", value: separator }
+  }
+});
+const PageOrientation = {
+  /**
+   * ## Portrait Mode
+   *
+   * Specifies that pages in this section shall be printed in portrait mode.
+   */
+  PORTRAIT: "portrait",
+  /**
+   * ## Landscape Mode
+   *
+   * Specifies that pages in this section shall be printed in landscape mode, which prints the page contents with a 90 degree rotation with respect to the normal page orientation.
+   */
+  LANDSCAPE: "landscape"
+};
+const createPageSize = ({ width, height, orientation, code: code2 }) => {
+  const widthTwips = twipsMeasureValue(width);
+  const heightTwips = twipsMeasureValue(height);
+  return new BuilderElement({
+    name: "w:pgSz",
+    attributes: {
+      width: { key: "w:w", value: orientation === PageOrientation.LANDSCAPE ? heightTwips : widthTwips },
+      height: { key: "w:h", value: orientation === PageOrientation.LANDSCAPE ? widthTwips : heightTwips },
+      orientation: { key: "w:orient", value: orientation },
+      code: { key: "w:code", value: code2 }
+    }
+  });
+};
+class PageTextDirectionAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", { val: "w:val" });
+  }
+}
+class PageTextDirection extends XmlComponent {
+  constructor(value) {
+    super("w:textDirection");
+    this.root.push(
+      new PageTextDirectionAttributes({
+        val: value
+      })
+    );
+  }
+}
+const createSectionType = (value) => new BuilderElement({
+  name: "w:type",
+  attributes: {
+    val: { key: "w:val", value }
+  }
+});
+const sectionMarginDefaults = {
+  /** Top margin: 1440 twips (1 inch) */
+  TOP: 1440,
+  /** Right margin: 1440 twips (1 inch) */
+  RIGHT: 1440,
+  /** Bottom margin: 1440 twips (1 inch) */
+  BOTTOM: 1440,
+  /** Left margin: 1440 twips (1 inch) */
+  LEFT: 1440,
+  /** Header margin from top: 708 twips (0.5 inches) */
+  HEADER: 708,
+  /** Footer margin from bottom: 708 twips (0.5 inches) */
+  FOOTER: 708,
+  /** Gutter margin for binding: 0 twips */
+  GUTTER: 0
+};
+const sectionPageSizeDefaults = {
+  /** Page width: 11906 twips (8.27 inches, 210mm) */
+  WIDTH: 11906,
+  /** Page height: 16838 twips (11.69 inches, 297mm) */
+  HEIGHT: 16838,
+  /** Page orientation: portrait */
+  ORIENTATION: PageOrientation.PORTRAIT
+};
+class SectionProperties extends XmlComponent {
+  constructor({
+    page: {
+      size: {
+        width = sectionPageSizeDefaults.WIDTH,
+        height = sectionPageSizeDefaults.HEIGHT,
+        orientation = sectionPageSizeDefaults.ORIENTATION
+      } = {},
+      margin: {
+        top = sectionMarginDefaults.TOP,
+        right = sectionMarginDefaults.RIGHT,
+        bottom = sectionMarginDefaults.BOTTOM,
+        left = sectionMarginDefaults.LEFT,
+        header = sectionMarginDefaults.HEADER,
+        footer = sectionMarginDefaults.FOOTER,
+        gutter = sectionMarginDefaults.GUTTER
+      } = {},
+      pageNumbers = {},
+      borders,
+      textDirection
+    } = {},
+    grid: { linePitch = 360, charSpace, type: gridType } = {},
+    headerWrapperGroup = {},
+    footerWrapperGroup = {},
+    lineNumbers,
+    titlePage,
+    verticalAlign,
+    column,
+    type: type2,
+    revision
+  } = {}) {
+    super("w:sectPr");
+    this.addHeaderFooterGroup(HeaderFooterType.HEADER, headerWrapperGroup);
+    this.addHeaderFooterGroup(HeaderFooterType.FOOTER, footerWrapperGroup);
+    if (type2) {
+      this.root.push(createSectionType(type2));
+    }
+    this.root.push(createPageSize({ width, height, orientation }));
+    this.root.push(createPageMargin(top, right, bottom, left, header, footer, gutter));
+    if (borders) {
+      this.root.push(new PageBorders(borders));
+    }
+    if (lineNumbers) {
+      this.root.push(createLineNumberType(lineNumbers));
+    }
+    this.root.push(createPageNumberType(pageNumbers));
+    if (column) {
+      this.root.push(createColumns(column));
+    }
+    if (verticalAlign) {
+      this.root.push(createVerticalAlign(verticalAlign));
+    }
+    if (titlePage !== void 0) {
+      this.root.push(new OnOffElement("w:titlePg", titlePage));
+    }
+    if (textDirection) {
+      this.root.push(new PageTextDirection(textDirection));
+    }
+    if (revision) {
+      this.root.push(new SectionPropertiesChange(revision));
+    }
+    this.root.push(createDocumentGrid({ linePitch, charSpace, type: gridType }));
+  }
+  addHeaderFooterGroup(type2, group2) {
+    if (group2.default) {
+      this.root.push(
+        createHeaderFooterReference(type2, {
+          type: HeaderFooterReferenceType.DEFAULT,
+          id: group2.default.View.ReferenceId
+        })
+      );
+    }
+    if (group2.first) {
+      this.root.push(
+        createHeaderFooterReference(type2, {
+          type: HeaderFooterReferenceType.FIRST,
+          id: group2.first.View.ReferenceId
+        })
+      );
+    }
+    if (group2.even) {
+      this.root.push(
+        createHeaderFooterReference(type2, {
+          type: HeaderFooterReferenceType.EVEN,
+          id: group2.even.View.ReferenceId
+        })
       );
     }
   }
+}
+class SectionPropertiesChange extends XmlComponent {
+  constructor(options) {
+    super("w:sectPrChange");
+    this.root.push(
+      new ChangeAttributes({
+        id: options.id,
+        author: options.author,
+        date: options.date
+      })
+    );
+    this.root.push(new SectionProperties(options));
+  }
+}
+class Body extends XmlComponent {
+  constructor() {
+    super("w:body");
+    __publicField(this, "sections", []);
+  }
+  /**
+   * Adds new section properties to the document body.
+   *
+   * Creates a new section by moving the previous section's properties into a paragraph
+   * at the end of that section, and then adding the new section as the current section.
+   *
+   * According to the OOXML specification:
+   * - Section properties for all sections except the last must be stored in a paragraph's
+   *   properties (pPr/sectPr) at the end of each section
+   * - The last section's properties are stored as a direct child of the body element (w:body/w:sectPr)
+   *
+   * @param options - Section properties configuration (page size, margins, headers, footers, etc.)
+   */
+  addSection(options) {
+    const currentSection = this.sections.pop();
+    this.root.push(this.createSectionParagraph(currentSection));
+    this.sections.push(new SectionProperties(options));
+  }
+  /**
+   * Prepares the body element for XML serialization.
+   *
+   * Ensures that the last section's properties are placed as a direct child of the body
+   * element, as required by the OOXML specification.
+   *
+   * @param context - The XML serialization context
+   * @returns The prepared XML object or undefined
+   */
+  prepForXml(context2) {
+    if (this.sections.length === 1) {
+      this.root.splice(0, 1);
+      this.root.push(this.sections.pop());
+    }
+    return super.prepForXml(context2);
+  }
+  /**
+   * Adds a block-level component to the body.
+   *
+   * This method is used internally by the Document class to add paragraphs,
+   * tables, and other block-level elements to the document body.
+   *
+   * @param component - The XML component to add (paragraph, table, etc.)
+   */
+  push(component) {
+    this.root.push(component);
+  }
+  createSectionParagraph(section) {
+    const paragraph2 = new Paragraph({});
+    const properties = new ParagraphProperties({});
+    properties.push(section);
+    paragraph2.addChildElement(properties);
+    return paragraph2;
+  }
+}
+class DocumentBackgroundAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      color: "w:color",
+      themeColor: "w:themeColor",
+      themeShade: "w:themeShade",
+      themeTint: "w:themeTint"
+    });
+  }
+}
+class DocumentBackground extends XmlComponent {
+  constructor(options) {
+    super("w:background");
+    this.root.push(
+      new DocumentBackgroundAttributes({
+        color: options.color === void 0 ? void 0 : hexColorValue(options.color),
+        themeColor: options.themeColor,
+        themeShade: options.themeShade === void 0 ? void 0 : uCharHexNumber(options.themeShade),
+        themeTint: options.themeTint === void 0 ? void 0 : uCharHexNumber(options.themeTint)
+      })
+    );
+  }
+}
+class Document extends XmlComponent {
+  constructor(options) {
+    super("w:document");
+    __publicField(this, "body");
+    this.root.push(
+      new DocumentAttributes(
+        [
+          "wpc",
+          "mc",
+          "o",
+          "r",
+          "m",
+          "v",
+          "wp14",
+          "wp",
+          "w10",
+          "w",
+          "w14",
+          "w15",
+          "wpg",
+          "wpi",
+          "wne",
+          "wps",
+          "cx",
+          "cx1",
+          "cx2",
+          "cx3",
+          "cx4",
+          "cx5",
+          "cx6",
+          "cx7",
+          "cx8",
+          "aink",
+          "am3d",
+          "w16cex",
+          "w16cid",
+          "w16",
+          "w16sdtdh",
+          "w16se"
+        ],
+        "w14 w15 wp14"
+      )
+    );
+    this.body = new Body();
+    if (options.background) {
+      this.root.push(new DocumentBackground(options.background));
+    }
+    this.root.push(this.body);
+  }
+  /**
+   * Adds a block-level element to the document body.
+   *
+   * @param item - The element to add (paragraph, table, table of contents, or hyperlink)
+   * @returns The Document instance for method chaining
+   */
+  add(item) {
+    this.body.push(item);
+    return this;
+  }
+  /**
+   * Gets the document body element.
+   *
+   * @returns The Body instance containing all document content
+   */
+  get Body() {
+    return this.body;
+  }
+}
+class DocumentWrapper {
+  constructor(options) {
+    __publicField(this, "document");
+    __publicField(this, "relationships");
+    this.document = new Document(options);
+    this.relationships = new Relationships();
+  }
   get View() {
-    return this.fontTable;
+    return this.document;
+  }
+  get Relationships() {
+    return this.relationships;
+  }
+}
+class EndnotesAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      wpc: "xmlns:wpc",
+      mc: "xmlns:mc",
+      o: "xmlns:o",
+      r: "xmlns:r",
+      m: "xmlns:m",
+      v: "xmlns:v",
+      wp14: "xmlns:wp14",
+      wp: "xmlns:wp",
+      w10: "xmlns:w10",
+      w: "xmlns:w",
+      w14: "xmlns:w14",
+      w15: "xmlns:w15",
+      wpg: "xmlns:wpg",
+      wpi: "xmlns:wpi",
+      wne: "xmlns:wne",
+      wps: "xmlns:wps",
+      Ignorable: "mc:Ignorable"
+    });
+  }
+}
+class EndnoteAttributes extends XmlAttributeComponent {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "xmlKeys", {
+      type: "w:type",
+      id: "w:id"
+    });
+  }
+}
+class EndnoteRefRun extends Run {
+  constructor() {
+    super({
+      style: "EndnoteReference"
+    });
+    this.root.push(new EndnoteReference());
+  }
+}
+const EndnoteType = {
+  SEPARATOR: "separator",
+  CONTINUATION_SEPARATOR: "continuationSeparator"
+};
+class Endnote extends XmlComponent {
+  constructor(options) {
+    super("w:endnote");
+    this.root.push(
+      new EndnoteAttributes({
+        type: options.type,
+        id: options.id
+      })
+    );
+    for (let i = 0; i < options.children.length; i++) {
+      const child = options.children[i];
+      if (i === 0) {
+        child.addRunToFront(new EndnoteRefRun());
+      }
+      this.root.push(child);
+    }
+  }
+}
+class ContinuationSeperator extends XmlComponent {
+  constructor() {
+    super("w:continuationSeparator");
+  }
+}
+class ContinuationSeperatorRun extends Run {
+  constructor() {
+    super({});
+    this.root.push(new ContinuationSeperator());
+  }
+}
+class Seperator extends XmlComponent {
+  constructor() {
+    super("w:separator");
+  }
+}
+class SeperatorRun extends Run {
+  constructor() {
+    super({});
+    this.root.push(new Seperator());
+  }
+}
+class Endnotes extends XmlComponent {
+  constructor() {
+    super("w:endnotes");
+    this.root.push(
+      new EndnotesAttributes({
+        wpc: "http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas",
+        mc: "http://schemas.openxmlformats.org/markup-compatibility/2006",
+        o: "urn:schemas-microsoft-com:office:office",
+        r: "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        m: "http://schemas.openxmlformats.org/officeDocument/2006/math",
+        v: "urn:schemas-microsoft-com:vml",
+        wp14: "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing",
+        wp: "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+        w10: "urn:schemas-microsoft-com:office:word",
+        w: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        w14: "http://schemas.microsoft.com/office/word/2010/wordml",
+        w15: "http://schemas.microsoft.com/office/word/2012/wordml",
+        wpg: "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup",
+        wpi: "http://schemas.microsoft.com/office/word/2010/wordprocessingInk",
+        wne: "http://schemas.microsoft.com/office/word/2006/wordml",
+        wps: "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+        Ignorable: "w14 w15 wp14"
+      })
+    );
+    const begin = new Endnote({
+      id: -1,
+      type: EndnoteType.SEPARATOR,
+      children: [
+        new Paragraph({
+          spacing: {
+            after: 0,
+            line: 240,
+            lineRule: LineRuleType.AUTO
+          },
+          children: [new SeperatorRun()]
+        })
+      ]
+    });
+    this.root.push(begin);
+    const spacing = new Endnote({
+      id: 0,
+      type: EndnoteType.CONTINUATION_SEPARATOR,
+      children: [
+        new Paragraph({
+          spacing: {
+            after: 0,
+            line: 240,
+            lineRule: LineRuleType.AUTO
+          },
+          children: [new ContinuationSeperatorRun()]
+        })
+      ]
+    });
+    this.root.push(spacing);
+  }
+  createEndnote(id, paragraph2) {
+    const endnote = new Endnote({
+      id,
+      children: paragraph2
+    });
+    this.root.push(endnote);
+  }
+}
+class EndnotesWrapper {
+  constructor() {
+    __publicField(this, "endnotes");
+    __publicField(this, "relationships");
+    this.endnotes = new Endnotes();
+    this.relationships = new Relationships();
+  }
+  get View() {
+    return this.endnotes;
   }
   get Relationships() {
     return this.relationships;
@@ -47683,7 +48078,7 @@ class FontWrapper {
 class FooterAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       wpc: "xmlns:wpc",
       mc: "xmlns:mc",
       o: "xmlns:o",
@@ -47712,7 +48107,7 @@ class FooterAttributes extends XmlAttributeComponent {
 let Footer$1 = class Footer extends InitializableXmlComponent {
   constructor(referenceNumber, initContent) {
     super("w:ftr", initContent);
-    __publicField2(this, "refId");
+    __publicField(this, "refId");
     this.refId = referenceNumber;
     if (!initContent) {
       this.root.push(
@@ -47746,8 +48141,8 @@ let Footer$1 = class Footer extends InitializableXmlComponent {
 };
 class FooterWrapper {
   constructor(media, referenceId, initContent) {
-    __publicField2(this, "footer");
-    __publicField2(this, "relationships");
+    __publicField(this, "footer");
+    __publicField(this, "relationships");
     this.media = media;
     this.footer = new Footer$1(referenceId, initContent);
     this.relationships = new Relationships();
@@ -47771,7 +48166,7 @@ class FooterWrapper {
 class FootnoteAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       type: "w:type",
       id: "w:id"
     });
@@ -47791,7 +48186,9 @@ class FootnoteRefRun extends Run {
   }
 }
 const FootnoteType = {
+  /** Separator line between body text and footnotes */
   SEPERATOR: "separator",
+  /** Continuation separator for footnotes spanning pages */
   CONTINUATION_SEPERATOR: "continuationSeparator"
 };
 class Footnote extends XmlComponent {
@@ -47812,32 +48209,10 @@ class Footnote extends XmlComponent {
     }
   }
 }
-class ContinuationSeperator extends XmlComponent {
-  constructor() {
-    super("w:continuationSeparator");
-  }
-}
-class ContinuationSeperatorRun extends Run {
-  constructor() {
-    super({});
-    this.root.push(new ContinuationSeperator());
-  }
-}
-class Seperator extends XmlComponent {
-  constructor() {
-    super("w:separator");
-  }
-}
-class SeperatorRun extends Run {
-  constructor() {
-    super({});
-    this.root.push(new Seperator());
-  }
-}
 class FootnotesAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       wpc: "xmlns:wpc",
       mc: "xmlns:mc",
       o: "xmlns:o",
@@ -47913,6 +48288,12 @@ class FootNotes extends XmlComponent {
     });
     this.root.push(spacing);
   }
+  /**
+   * Creates and adds a new footnote to the collection.
+   *
+   * @param id - Unique numeric identifier for the footnote
+   * @param paragraph - Array of paragraphs that make up the footnote content
+   */
   createFootNote(id, paragraph2) {
     const footnote = new Footnote({
       id,
@@ -47923,8 +48304,8 @@ class FootNotes extends XmlComponent {
 }
 class FootnotesWrapper {
   constructor() {
-    __publicField2(this, "footnotess");
-    __publicField2(this, "relationships");
+    __publicField(this, "footnotess");
+    __publicField(this, "relationships");
     this.footnotess = new FootNotes();
     this.relationships = new Relationships();
   }
@@ -47938,7 +48319,7 @@ class FootnotesWrapper {
 class HeaderAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       wpc: "xmlns:wpc",
       mc: "xmlns:mc",
       o: "xmlns:o",
@@ -47978,7 +48359,7 @@ class HeaderAttributes extends XmlAttributeComponent {
 let Header$1 = class Header extends InitializableXmlComponent {
   constructor(referenceNumber, initContent) {
     super("w:hdr", initContent);
-    __publicField2(this, "refId");
+    __publicField(this, "refId");
     this.refId = referenceNumber;
     if (!initContent) {
       this.root.push(
@@ -48023,8 +48404,8 @@ let Header$1 = class Header extends InitializableXmlComponent {
 };
 class HeaderWrapper {
   constructor(media, referenceId, initContent) {
-    __publicField2(this, "header");
-    __publicField2(this, "relationships");
+    __publicField(this, "header");
+    __publicField(this, "relationships");
     this.media = media;
     this.header = new Header$1(referenceId, initContent);
     this.relationships = new Relationships();
@@ -48048,23 +48429,35 @@ class HeaderWrapper {
 }
 class Media {
   constructor() {
-    __publicField2(this, "map");
+    __publicField(this, "map");
     this.map = /* @__PURE__ */ new Map();
   }
+  /**
+   * Adds an image to the media collection.
+   *
+   * @param key - Unique identifier for this image
+   * @param mediaData - Complete image data including file name, transformation, and raw data
+   */
   addImage(key, mediaData) {
     this.map.set(key, mediaData);
   }
+  /**
+   * Gets all images as an array.
+   *
+   * @returns Read-only array of all media data in the collection
+   */
   get Array() {
     return Array.from(this.map.values());
   }
 }
 const LevelFormat = {
+  /** Bullet points. */
   BULLET: "bullet"
 };
 class LevelAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       ilvl: "w:ilvl",
       tentative: "w15:tentative"
     });
@@ -48116,6 +48509,12 @@ class IsLegalNumberingStyle extends XmlComponent {
   }
 }
 class LevelBase extends XmlComponent {
+  /**
+   * Creates a new numbering level.
+   *
+   * @param options - Level configuration options
+   * @throws Error if level is greater than 9 (Word limitation)
+   */
   constructor({
     level,
     format,
@@ -48127,8 +48526,8 @@ class LevelBase extends XmlComponent {
     isLegalNumberingStyle
   }) {
     super("w:lvl");
-    __publicField2(this, "paragraphProperties");
-    __publicField2(this, "runProperties");
+    __publicField(this, "paragraphProperties");
+    __publicField(this, "runProperties");
     this.root.push(new NumberValueElement("w:start", decimalNumber(start)));
     if (format) {
       this.root.push(new NumberFormat(format));
@@ -48161,10 +48560,14 @@ class LevelBase extends XmlComponent {
   }
 }
 class Level extends LevelBase {
-  // This is the level that sits under abstractNum. We make a
-  // handful of properties required
+  // This is the level that sits under abstractNum
 }
 class MultiLevelType extends XmlComponent {
+  /**
+   * Creates a new multi-level type specification.
+   *
+   * @param value - The multi-level type: "singleLevel", "multilevel", or "hybridMultilevel"
+   */
   constructor(value) {
     super("w:multiLevelType");
     this.root.push(
@@ -48177,16 +48580,22 @@ class MultiLevelType extends XmlComponent {
 class AbstractNumberingAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       abstractNumId: "w:abstractNumId",
       restartNumberingAfterBreak: "w15:restartNumberingAfterBreak"
     });
   }
 }
 class AbstractNumbering extends XmlComponent {
+  /**
+   * Creates a new abstract numbering definition.
+   *
+   * @param id - Unique identifier for this abstract numbering definition
+   * @param levelOptions - Array of level definitions (up to 9 levels)
+   */
   constructor(id, levelOptions) {
     super("w:abstractNum");
-    __publicField2(this, "id");
+    __publicField(this, "id");
     this.root.push(
       new AbstractNumberingAttributes({
         abstractNumId: decimalNumber(id),
@@ -48213,15 +48622,20 @@ class AbstractNumId extends XmlComponent {
 class NumAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { numId: "w:numId" });
+    __publicField(this, "xmlKeys", { numId: "w:numId" });
   }
 }
 class ConcreteNumbering extends XmlComponent {
+  /**
+   * Creates a new concrete numbering instance.
+   *
+   * @param options - Configuration options for the numbering instance
+   */
   constructor(options) {
     super("w:num");
-    __publicField2(this, "numId");
-    __publicField2(this, "reference");
-    __publicField2(this, "instance");
+    __publicField(this, "numId");
+    __publicField(this, "reference");
+    __publicField(this, "instance");
     this.numId = options.numId;
     this.reference = options.reference;
     this.instance = options.instance;
@@ -48241,10 +48655,16 @@ class ConcreteNumbering extends XmlComponent {
 class LevelOverrideAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { ilvl: "w:ilvl" });
+    __publicField(this, "xmlKeys", { ilvl: "w:ilvl" });
   }
 }
 class LevelOverride extends XmlComponent {
+  /**
+   * Creates a new level override.
+   *
+   * @param levelNum - The level number to override (0-8)
+   * @param start - Optional starting number for the level
+   */
   constructor(levelNum, start) {
     super("w:lvlOverride");
     this.root.push(new LevelOverrideAttributes({ ilvl: levelNum }));
@@ -48256,23 +48676,36 @@ class LevelOverride extends XmlComponent {
 class StartOverrideAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val" });
+    __publicField(this, "xmlKeys", { val: "w:val" });
   }
 }
 class StartOverride extends XmlComponent {
+  /**
+   * Creates a new start override.
+   *
+   * @param start - The starting number
+   */
   constructor(start) {
     super("w:startOverride");
     this.root.push(new StartOverrideAttributes({ val: start }));
   }
 }
 class Numbering extends XmlComponent {
+  /**
+   * Creates a new numbering definition collection.
+   *
+   * Initializes the numbering with a default bullet list configuration and
+   * any custom numbering configurations provided in the options.
+   *
+   * @param options - Configuration options for numbering definitions
+   */
   constructor(options) {
     super("w:numbering");
-    __publicField2(this, "abstractNumberingMap", /* @__PURE__ */ new Map());
-    __publicField2(this, "concreteNumberingMap", /* @__PURE__ */ new Map());
-    __publicField2(this, "referenceConfigMap", /* @__PURE__ */ new Map());
-    __publicField2(this, "abstractNumUniqueNumericId", abstractNumUniqueNumericIdGen());
-    __publicField2(this, "concreteNumUniqueNumericId", concreteNumUniqueNumericIdGen());
+    __publicField(this, "abstractNumberingMap", /* @__PURE__ */ new Map());
+    __publicField(this, "concreteNumberingMap", /* @__PURE__ */ new Map());
+    __publicField(this, "referenceConfigMap", /* @__PURE__ */ new Map());
+    __publicField(this, "abstractNumUniqueNumericId", abstractNumUniqueNumericIdGen());
+    __publicField(this, "concreteNumUniqueNumericId", concreteNumUniqueNumericIdGen());
     this.root.push(
       new DocumentAttributes(
         ["wpc", "mc", "o", "r", "m", "v", "wp14", "wp", "w10", "w", "w14", "w15", "wpg", "wpi", "wne", "wps"],
@@ -48401,6 +48834,14 @@ class Numbering extends XmlComponent {
       this.referenceConfigMap.set(con.reference, con.levels);
     }
   }
+  /**
+   * Prepares the numbering definitions for XML serialization.
+   *
+   * Adds all abstract and concrete numbering definitions to the XML tree.
+   *
+   * @param context - The XML context
+   * @returns The prepared XML object
+   */
   prepForXml(context2) {
     for (const numbering of this.abstractNumberingMap.values()) {
       this.root.push(numbering);
@@ -48410,6 +48851,16 @@ class Numbering extends XmlComponent {
     }
     return super.prepForXml(context2);
   }
+  /**
+   * Creates a concrete numbering instance from an abstract numbering definition.
+   *
+   * This method creates a new concrete numbering instance that references an
+   * abstract numbering definition. It's used internally when paragraphs reference
+   * numbering configurations.
+   *
+   * @param reference - The reference name of the abstract numbering definition
+   * @param instance - The instance number for this concrete numbering
+   */
   createConcreteNumberingInstance(reference, instance) {
     const abstractNumbering = this.abstractNumberingMap.get(reference);
     if (!abstractNumbering) {
@@ -48427,7 +48878,7 @@ class Numbering extends XmlComponent {
       reference,
       instance,
       overrideLevels: [
-        firstLevelStartNumber && Number.isInteger(firstLevelStartNumber) ? {
+        typeof firstLevelStartNumber === "number" && Number.isInteger(firstLevelStartNumber) ? {
           num: 0,
           start: firstLevelStartNumber
         } : {
@@ -48438,41 +48889,37 @@ class Numbering extends XmlComponent {
     };
     this.concreteNumberingMap.set(fullReference, new ConcreteNumbering(concreteNumberingSettings));
   }
+  /**
+   * Gets all concrete numbering instances.
+   *
+   * @returns An array of all concrete numbering instances
+   */
   get ConcreteNumbering() {
     return Array.from(this.concreteNumberingMap.values());
   }
+  /**
+   * Gets all reference configurations.
+   *
+   * @returns An array of all numbering reference configurations
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get ReferenceConfig() {
     return Array.from(this.referenceConfigMap.values());
   }
 }
-class CompatibilitySettingAttributes extends XmlAttributeComponent {
-  constructor() {
-    super(...arguments);
-    __publicField2(this, "xmlKeys", {
-      version: "w:val",
-      name: "w:name",
-      uri: "w:uri"
-    });
+const createCompatibilitySetting = (version2) => new BuilderElement({
+  name: "w:compatSetting",
+  attributes: {
+    version: { key: "w:val", value: version2 },
+    name: { key: "w:name", value: "compatibilityMode" },
+    uri: { key: "w:uri", value: "http://schemas.microsoft.com/office/word" }
   }
-}
-class CompatibilitySetting extends XmlComponent {
-  constructor(version2) {
-    super("w:compatSetting");
-    this.root.push(
-      new CompatibilitySettingAttributes({
-        version: version2,
-        uri: "http://schemas.microsoft.com/office/word",
-        name: "compatibilityMode"
-      })
-    );
-  }
-}
+});
 class Compatibility extends XmlComponent {
   constructor(options) {
     super("w:compat");
     if (options.version) {
-      this.root.push(new CompatibilitySetting(options.version));
+      this.root.push(createCompatibilitySetting(options.version));
     }
     if (options.useSingleBorderforContiguousCells) {
       this.root.push(new OnOffElement("w:useSingleBorderforContiguousCells", options.useSingleBorderforContiguousCells));
@@ -48674,7 +49121,7 @@ class Compatibility extends XmlComponent {
 class SettingsAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       wpc: "xmlns:wpc",
       mc: "xmlns:mc",
       o: "xmlns:o",
@@ -48755,7 +49202,7 @@ class Settings extends XmlComponent {
 class ComponentAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", { val: "w:val" });
+    __publicField(this, "xmlKeys", { val: "w:val" });
   }
 }
 class Name extends XmlComponent {
@@ -48773,7 +49220,7 @@ class UiPriority extends XmlComponent {
 class StyleAttributes extends XmlAttributeComponent {
   constructor() {
     super(...arguments);
-    __publicField2(this, "xmlKeys", {
+    __publicField(this, "xmlKeys", {
       type: "w:type",
       styleId: "w:styleId",
       default: "w:default",
@@ -48781,7 +49228,7 @@ class StyleAttributes extends XmlAttributeComponent {
     });
   }
 }
-class Style2 extends XmlComponent {
+class Style extends XmlComponent {
   constructor(attributes, options) {
     super("w:style");
     this.root.push(new StyleAttributes(attributes));
@@ -48811,18 +49258,18 @@ class Style2 extends XmlComponent {
     }
   }
 }
-class StyleForParagraph extends Style2 {
+class StyleForParagraph extends Style {
   constructor(options) {
     super({ type: "paragraph", styleId: options.id }, options);
-    __publicField2(this, "paragraphProperties");
-    __publicField2(this, "runProperties");
+    __publicField(this, "paragraphProperties");
+    __publicField(this, "runProperties");
     this.paragraphProperties = new ParagraphProperties(options.paragraph);
     this.runProperties = new RunProperties(options.run);
     this.root.push(this.paragraphProperties);
     this.root.push(this.runProperties);
   }
 }
-class StyleForCharacter extends Style2 {
+class StyleForCharacter extends Style {
   constructor(options) {
     super(
       { type: "character", styleId: options.id },
@@ -48831,7 +49278,7 @@ class StyleForCharacter extends Style2 {
         unhideWhenUsed: true
       }, options)
     );
-    __publicField2(this, "runProperties");
+    __publicField(this, "runProperties");
     this.runProperties = new RunProperties(options.run);
     this.root.push(this.runProperties);
   }
@@ -48969,6 +49416,56 @@ class FootnoteTextChar extends StyleForCharacter {
     }, options));
   }
 }
+class EndnoteText extends StyleForParagraph {
+  constructor(options) {
+    super(__spreadValues({
+      id: "EndnoteText",
+      name: "endnote text",
+      link: "EndnoteTextChar",
+      basedOn: "Normal",
+      uiPriority: 99,
+      semiHidden: true,
+      unhideWhenUsed: true,
+      paragraph: {
+        spacing: {
+          after: 0,
+          line: 240,
+          lineRule: LineRuleType.AUTO
+        }
+      },
+      run: {
+        size: 20
+      }
+    }, options));
+  }
+}
+class EndnoteReferenceStyle extends StyleForCharacter {
+  constructor(options) {
+    super(__spreadValues({
+      id: "EndnoteReference",
+      name: "endnote reference",
+      basedOn: "DefaultParagraphFont",
+      semiHidden: true,
+      run: {
+        superScript: true
+      }
+    }, options));
+  }
+}
+class EndnoteTextChar extends StyleForCharacter {
+  constructor(options) {
+    super(__spreadValues({
+      id: "EndnoteTextChar",
+      name: "Endnote Text Char",
+      basedOn: "DefaultParagraphFont",
+      link: "EndnoteText",
+      semiHidden: true,
+      run: {
+        size: 20
+      }
+    }, options));
+  }
+}
 class HyperlinkStyle extends StyleForCharacter {
   constructor(options) {
     super(__spreadValues({
@@ -49022,8 +49519,8 @@ class RunPropertiesDefaults extends XmlComponent {
 class DocumentDefaults extends XmlComponent {
   constructor(options) {
     super("w:docDefaults");
-    __publicField2(this, "runPropertiesDefaults");
-    __publicField2(this, "paragraphPropertiesDefaults");
+    __publicField(this, "runPropertiesDefaults");
+    __publicField(this, "paragraphPropertiesDefaults");
     this.runPropertiesDefaults = new RunPropertiesDefaults(options.run);
     this.paragraphPropertiesDefaults = new ParagraphPropertiesDefaults(options.paragraph);
     this.root.push(this.runPropertiesDefaults);
@@ -49032,27 +49529,29 @@ class DocumentDefaults extends XmlComponent {
 }
 class ExternalStylesFactory {
   /**
-   * Creates new Style based on the given styles.
-   * Parses the styles and convert them to XmlComponent.
+   * Creates new Styles based on the given XML data.
+   *
+   * Parses the styles XML and converts them to XmlComponent instances.
+   *
    * Example content from styles.xml:
-   * <?xml version="1.0">
+   * ```xml
+   * <?xml version="1.0"?>
    * <w:styles xmlns:mc="some schema" ...>
-   *
    *   <w:style w:type="paragraph" w:styleId="Heading1">
-   *           <w:name w:val="heading 1"/>
-   *           .....
+   *     <w:name w:val="heading 1"/>
+   *     ...
    *   </w:style>
-   *
    *   <w:style w:type="paragraph" w:styleId="Heading2">
-   *           <w:name w:val="heading 2"/>
-   *           .....
+   *     <w:name w:val="heading 2"/>
+   *     ...
    *   </w:style>
-   *
-   *   <w:docDefaults>Or any other element will be parsed to</w:docDefaults>
-   *
+   *   <w:docDefaults>...</w:docDefaults>
    * </w:styles>
+   * ```
    *
-   * @param externalStyles context from styles.xml
+   * @param xmlData - XML string containing styles data from styles.xml
+   * @returns Styles object containing all parsed styles
+   * @throws Error if styles element cannot be found in the XML
    */
   newInstance(xmlData) {
     const xmlObj = libExports.xml2js(xmlData, { compact: false });
@@ -49066,11 +49565,10 @@ class ExternalStylesFactory {
       throw new Error("can not find styles element");
     }
     const stylesElements = stylesXmlElement.elements || [];
-    const importedStyle = new Styles({
+    return {
       initialStyles: new ImportedRootElementAttributes(stylesXmlElement.attributes),
       importedStyles: stylesElements.map((childElm) => convertToXmlComponent(childElm))
-    });
-    return importedStyle;
+    };
   }
 }
 class DefaultStylesFactory {
@@ -49129,30 +49627,34 @@ class DefaultStylesFactory {
         new HyperlinkStyle(options.hyperlink || {}),
         new FootnoteReferenceStyle(options.footnoteReference || {}),
         new FootnoteText(options.footnoteText || {}),
-        new FootnoteTextChar(options.footnoteTextChar || {})
+        new FootnoteTextChar(options.footnoteTextChar || {}),
+        new EndnoteReferenceStyle(options.endnoteReference || {}),
+        new EndnoteText(options.endnoteText || {}),
+        new EndnoteTextChar(options.endnoteTextChar || {})
       ]
     };
   }
 }
 class File {
   constructor(options) {
-    __publicField2(this, "currentRelationshipId", 1);
-    __publicField2(this, "documentWrapper");
-    __publicField2(this, "headers", []);
-    __publicField2(this, "footers", []);
-    __publicField2(this, "coreProperties");
-    __publicField2(this, "numbering");
-    __publicField2(this, "media");
-    __publicField2(this, "fileRelationships");
-    __publicField2(this, "footnotesWrapper");
-    __publicField2(this, "settings");
-    __publicField2(this, "contentTypes");
-    __publicField2(this, "customProperties");
-    __publicField2(this, "appProperties");
-    __publicField2(this, "styles");
-    __publicField2(this, "comments");
-    __publicField2(this, "fontWrapper");
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    __publicField(this, "currentRelationshipId", 1);
+    __publicField(this, "documentWrapper");
+    __publicField(this, "headers", []);
+    __publicField(this, "footers", []);
+    __publicField(this, "coreProperties");
+    __publicField(this, "numbering");
+    __publicField(this, "media");
+    __publicField(this, "fileRelationships");
+    __publicField(this, "footnotesWrapper");
+    __publicField(this, "endnotesWrapper");
+    __publicField(this, "settings");
+    __publicField(this, "contentTypes");
+    __publicField(this, "customProperties");
+    __publicField(this, "appProperties");
+    __publicField(this, "styles");
+    __publicField(this, "comments");
+    __publicField(this, "fontWrapper");
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
     this.coreProperties = new CoreProperties(__spreadProps(__spreadValues({}, options), {
       creator: (_a = options.creator) != null ? _a : "Un-named",
       revision: (_b = options.revision) != null ? _b : 1,
@@ -49164,6 +49666,7 @@ class File {
     this.customProperties = new CustomProperties((_e = options.customProperties) != null ? _e : []);
     this.appProperties = new AppProperties();
     this.footnotesWrapper = new FootnotesWrapper();
+    this.endnotesWrapper = new EndnotesWrapper();
     this.contentTypes = new ContentTypes();
     this.documentWrapper = new DocumentWrapper({ background: options.background });
     this.settings = new Settings({
@@ -49182,8 +49685,13 @@ class File {
     });
     this.media = new Media();
     if (options.externalStyles !== void 0) {
-      const stylesFactory = new ExternalStylesFactory();
-      this.styles = stylesFactory.newInstance(options.externalStyles);
+      const defaultFactory = new DefaultStylesFactory();
+      const defaultStyles = defaultFactory.newInstance((_l = options.styles) == null ? void 0 : _l.default);
+      const externalFactory = new ExternalStylesFactory();
+      const externalStyles = externalFactory.newInstance(options.externalStyles);
+      this.styles = new Styles(__spreadProps(__spreadValues({}, externalStyles), {
+        importedStyles: [...defaultStyles.importedStyles, ...externalStyles.importedStyles]
+      }));
     } else if (options.styles) {
       const stylesFactory = new DefaultStylesFactory();
       const defaultStyles = stylesFactory.newInstance(options.styles.default);
@@ -49201,7 +49709,12 @@ class File {
         this.footnotesWrapper.View.createFootNote(parseFloat(key), options.footnotes[key].children);
       }
     }
-    this.fontWrapper = new FontWrapper((_l = options.fonts) != null ? _l : []);
+    if (options.endnotes) {
+      for (const key in options.endnotes) {
+        this.endnotesWrapper.View.createEndnote(parseFloat(key), options.endnotes[key].children);
+      }
+    }
+    this.fontWrapper = new FontWrapper((_m = options.fonts) != null ? _m : []);
   }
   addSection({ headers: headers2 = {}, footers = {}, children, properties }) {
     this.documentWrapper.View.Body.addSection(__spreadProps(__spreadValues({}, properties), {
@@ -49238,7 +49751,7 @@ class File {
   }
   addHeaderToDocument(header, type2 = HeaderFooterReferenceType.DEFAULT) {
     this.headers.push({ header, type: type2 });
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       header.View.ReferenceId,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
       `header${this.headers.length}.xml`
@@ -49247,7 +49760,7 @@ class File {
   }
   addFooterToDocument(footer, type2 = HeaderFooterReferenceType.DEFAULT) {
     this.footers.push({ footer, type: type2 });
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       footer.View.ReferenceId,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
       `footer${this.footers.length}.xml`
@@ -49255,51 +49768,57 @@ class File {
     this.contentTypes.addFooter(this.footers.length);
   }
   addDefaultRelationships() {
-    this.fileRelationships.createRelationship(
+    this.fileRelationships.addRelationship(
       1,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
       "word/document.xml"
     );
-    this.fileRelationships.createRelationship(
+    this.fileRelationships.addRelationship(
       2,
       "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
       "docProps/core.xml"
     );
-    this.fileRelationships.createRelationship(
+    this.fileRelationships.addRelationship(
       3,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
       "docProps/app.xml"
     );
-    this.fileRelationships.createRelationship(
+    this.fileRelationships.addRelationship(
       4,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties",
       "docProps/custom.xml"
     );
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       // eslint-disable-next-line functional/immutable-data
       this.currentRelationshipId++,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
       "styles.xml"
     );
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       // eslint-disable-next-line functional/immutable-data
       this.currentRelationshipId++,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
       "numbering.xml"
     );
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       // eslint-disable-next-line functional/immutable-data
       this.currentRelationshipId++,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
       "footnotes.xml"
     );
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
+      // eslint-disable-next-line functional/immutable-data
+      this.currentRelationshipId++,
+      "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes",
+      "endnotes.xml"
+    );
+    this.documentWrapper.Relationships.addRelationship(
       // eslint-disable-next-line functional/immutable-data
       this.currentRelationshipId++,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings",
       "settings.xml"
     );
-    this.documentWrapper.Relationships.createRelationship(
+    this.documentWrapper.Relationships.addRelationship(
       // eslint-disable-next-line functional/immutable-data
       this.currentRelationshipId++,
       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
@@ -49342,6 +49861,9 @@ class File {
   get FootNotes() {
     return this.footnotesWrapper;
   }
+  get Endnotes() {
+    return this.endnotesWrapper;
+  }
   get Settings() {
     return this.settings;
   }
@@ -49361,9 +49883,9 @@ var hasRequiredJszip_min;
 function requireJszip_min() {
   if (hasRequiredJszip_min) return jszip_min.exports;
   hasRequiredJszip_min = 1;
-  (function(module2, exports$1) {
+  (function(module, exports$1) {
     !function(e) {
-      module2.exports = e();
+      module.exports = e();
     }(function() {
       return function s(a, o, h) {
         function u(r, e2) {
@@ -51947,6 +52469,14 @@ const obfuscate = (buf, fontKey) => {
   return out2;
 };
 class Formatter {
+  /**
+   * Formats an XML component into a serializable object.
+   *
+   * @param input - The XML component to format
+   * @param context - The context containing file state and relationships
+   * @returns A serializable XML object structure
+   * @throws Error if the component cannot be formatted correctly
+   */
   format(input, context2 = { stack: [] }) {
     const output = input.prepForXml(context2);
     if (output) {
@@ -51957,6 +52487,14 @@ class Formatter {
   }
 }
 class ImageReplacer {
+  /**
+   * Replaces image placeholder tokens with relationship IDs.
+   *
+   * @param xmlData - The XML string containing image placeholders
+   * @param mediaData - Array of media data to replace
+   * @param offset - Starting offset for relationship IDs
+   * @returns XML string with placeholders replaced by relationship IDs
+   */
   replace(xmlData, mediaData, offset) {
     let currentXmlData = xmlData;
     mediaData.forEach((image, i) => {
@@ -51964,11 +52502,28 @@ class ImageReplacer {
     });
     return currentXmlData;
   }
+  /**
+   * Extracts media data referenced in the XML content.
+   *
+   * @param xmlData - The XML string to search for media references
+   * @param media - The media collection to search within
+   * @returns Array of media data found in the XML
+   */
   getMediaData(xmlData, media) {
     return media.Array.filter((image) => xmlData.search(`{${image.fileName}}`) > 0);
   }
 }
 class NumberingReplacer {
+  /**
+   * Replaces numbering placeholder tokens with actual numbering IDs.
+   *
+   * Placeholder format: {reference-instance} where reference identifies the
+   * numbering definition and instance is the specific usage.
+   *
+   * @param xmlData - The XML string containing numbering placeholders
+   * @param concreteNumberings - Array of concrete numbering instances to replace
+   * @returns XML string with placeholders replaced by numbering IDs
+   */
   replace(xmlData, concreteNumberings) {
     let currentXmlData = xmlData;
     for (const concreteNumbering of concreteNumberings) {
@@ -51981,14 +52536,34 @@ class NumberingReplacer {
   }
 }
 class Compiler {
+  /**
+   * Creates a new Compiler instance.
+   *
+   * Initializes the formatter and replacer utilities used during compilation.
+   */
   constructor() {
-    __publicField2(this, "formatter");
-    __publicField2(this, "imageReplacer");
-    __publicField2(this, "numberingReplacer");
+    __publicField(this, "formatter");
+    __publicField(this, "imageReplacer");
+    __publicField(this, "numberingReplacer");
     this.formatter = new Formatter();
     this.imageReplacer = new ImageReplacer();
     this.numberingReplacer = new NumberingReplacer();
   }
+  /**
+   * Compiles a File object into a JSZip archive containing the complete OOXML package.
+   *
+   * This method orchestrates the entire compilation process:
+   * - Converts all document components to XML
+   * - Manages image and numbering placeholder replacements
+   * - Creates relationship files
+   * - Packages fonts and media files
+   * - Assembles everything into a ZIP archive
+   *
+   * @param file - The document to compile
+   * @param prettifyXml - Optional XML formatting style
+   * @param overrides - Optional custom XML file overrides
+   * @returns A JSZip instance containing the complete .docx package
+   */
   compile(file, prettifyXml, overrides = []) {
     const zip2 = new JSZip();
     const xmlifiedFileMapping = this.xmlifyFile(file, prettifyXml);
@@ -51996,14 +52571,14 @@ class Compiler {
     for (const [, obj] of map2) {
       if (Array.isArray(obj)) {
         for (const subFile of obj) {
-          zip2.file(subFile.path, subFile.data);
+          zip2.file(subFile.path, encodeUtf8(subFile.data));
         }
       } else {
-        zip2.file(obj.path, obj.data);
+        zip2.file(obj.path, encodeUtf8(obj.data));
       }
     }
     for (const subFile of overrides) {
-      zip2.file(subFile.path, subFile.data);
+      zip2.file(subFile.path, encodeUtf8(subFile.data));
     }
     for (const data of file.Media.Array) {
       if (data.type !== "svg") {
@@ -52053,19 +52628,35 @@ class Compiler {
         }
       }
     );
+    const footnoteRelationshipCount = file.FootNotes.Relationships.RelationshipCount + 1;
+    const footnoteXmlData = xml(
+      this.formatter.format(file.FootNotes.View, {
+        viewWrapper: file.FootNotes,
+        file,
+        stack: []
+      }),
+      {
+        indent: prettify2,
+        declaration: {
+          standalone: "yes",
+          encoding: "UTF-8"
+        }
+      }
+    );
     const documentMediaDatas = this.imageReplacer.getMediaData(documentXmlData, file.Media);
     const commentMediaDatas = this.imageReplacer.getMediaData(commentXmlData, file.Media);
+    const footnoteMediaDatas = this.imageReplacer.getMediaData(footnoteXmlData, file.Media);
     return {
       Relationships: {
         data: (() => {
           documentMediaDatas.forEach((mediaData, i) => {
-            file.Document.Relationships.createRelationship(
+            file.Document.Relationships.addRelationship(
               documentRelationshipCount + i,
               "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
               `media/${mediaData.fileName}`
             );
           });
-          file.Document.Relationships.createRelationship(
+          file.Document.Relationships.addRelationship(
             file.Document.Relationships.RelationshipCount + 1,
             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable",
             "fontTable.xml"
@@ -52181,7 +52772,7 @@ class Compiler {
         );
         const mediaDatas = this.imageReplacer.getMediaData(xmlData, file.Media);
         mediaDatas.forEach((mediaData, i) => {
-          headerWrapper.Relationships.createRelationship(
+          headerWrapper.Relationships.addRelationship(
             i,
             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
             `media/${mediaData.fileName}`
@@ -52220,7 +52811,7 @@ class Compiler {
         );
         const mediaDatas = this.imageReplacer.getMediaData(xmlData, file.Media);
         mediaDatas.forEach((mediaData, i) => {
-          footerWrapper.Relationships.createRelationship(
+          footerWrapper.Relationships.addRelationship(
             i,
             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
             `media/${mediaData.fileName}`
@@ -52338,25 +52929,42 @@ class Compiler {
         path: "docProps/app.xml"
       },
       FootNotes: {
-        data: xml(
-          this.formatter.format(file.FootNotes.View, {
-            viewWrapper: file.FootNotes,
-            file,
-            stack: []
-          }),
-          {
-            indent: prettify2,
-            declaration: {
-              encoding: "UTF-8"
-            }
-          }
-        ),
+        data: (() => {
+          const xmlData = this.imageReplacer.replace(footnoteXmlData, footnoteMediaDatas, footnoteRelationshipCount);
+          const referenedXmlData = this.numberingReplacer.replace(xmlData, file.Numbering.ConcreteNumbering);
+          return referenedXmlData;
+        })(),
         path: "word/footnotes.xml"
       },
       FootNotesRelationships: {
+        data: (() => {
+          footnoteMediaDatas.forEach((mediaData, i) => {
+            file.FootNotes.Relationships.addRelationship(
+              footnoteRelationshipCount + i,
+              "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              `media/${mediaData.fileName}`
+            );
+          });
+          return xml(
+            this.formatter.format(file.FootNotes.Relationships, {
+              viewWrapper: file.FootNotes,
+              file,
+              stack: []
+            }),
+            {
+              indent: prettify2,
+              declaration: {
+                encoding: "UTF-8"
+              }
+            }
+          );
+        })(),
+        path: "word/_rels/footnotes.xml.rels"
+      },
+      Endnotes: {
         data: xml(
-          this.formatter.format(file.FootNotes.Relationships, {
-            viewWrapper: file.FootNotes,
+          this.formatter.format(file.Endnotes.View, {
+            viewWrapper: file.Endnotes,
             file,
             stack: []
           }),
@@ -52367,7 +52975,23 @@ class Compiler {
             }
           }
         ),
-        path: "word/_rels/footnotes.xml.rels"
+        path: "word/endnotes.xml"
+      },
+      EndnotesRelationships: {
+        data: xml(
+          this.formatter.format(file.Endnotes.Relationships, {
+            viewWrapper: file.Endnotes,
+            file,
+            stack: []
+          }),
+          {
+            indent: prettify2,
+            declaration: {
+              encoding: "UTF-8"
+            }
+          }
+        ),
+        path: "word/_rels/endnotes.xml.rels"
       },
       Settings: {
         data: xml(
@@ -52397,7 +53021,7 @@ class Compiler {
       CommentsRelationships: {
         data: (() => {
           commentMediaDatas.forEach((mediaData, i) => {
-            file.Comments.Relationships.createRelationship(
+            file.Comments.Relationships.addRelationship(
               commentRelationshipCount + i,
               "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
               `media/${mediaData.fileName}`
@@ -52459,10 +53083,20 @@ class Compiler {
   }
 }
 const PrettifyType = {
+  /** Indent with 2 spaces */
   WITH_2_BLANKS: "  "
 };
 const convertPrettifyType = (prettify2) => prettify2 === true ? PrettifyType.WITH_2_BLANKS : prettify2 === false ? void 0 : prettify2;
 const _Packer = class _Packer2 {
+  /**
+   * Exports a document to the specified output format.
+   *
+   * @param file - The document to export
+   * @param type - The output format type (e.g., "nodebuffer", "blob", "string")
+   * @param prettify - Whether to prettify the XML output (boolean or PrettifyType)
+   * @param overrides - Optional array of file overrides for custom XML content
+   * @returns A promise resolving to the exported document in the specified format
+   */
   // eslint-disable-next-line require-await
   static pack(_0, _12, _2) {
     return __async(this, arguments, function* (file, type2, prettify2, overrides = []) {
@@ -52474,21 +53108,69 @@ const _Packer = class _Packer2 {
       });
     });
   }
+  /**
+   * Exports a document to a string representation.
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A promise resolving to the document as a string
+   */
   static toString(file, prettify2, overrides = []) {
     return _Packer2.pack(file, "string", prettify2, overrides);
   }
+  /**
+   * Exports a document to a Node.js Buffer.
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A promise resolving to the document as a Buffer
+   */
   static toBuffer(file, prettify2, overrides = []) {
     return _Packer2.pack(file, "nodebuffer", prettify2, overrides);
   }
+  /**
+   * Exports a document to a base64-encoded string.
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A promise resolving to the document as a base64 string
+   */
   static toBase64String(file, prettify2, overrides = []) {
     return _Packer2.pack(file, "base64", prettify2, overrides);
   }
+  /**
+   * Exports a document to a Blob (for browser environments).
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A promise resolving to the document as a Blob
+   */
   static toBlob(file, prettify2, overrides = []) {
     return _Packer2.pack(file, "blob", prettify2, overrides);
   }
+  /**
+   * Exports a document to an ArrayBuffer.
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A promise resolving to the document as an ArrayBuffer
+   */
   static toArrayBuffer(file, prettify2, overrides = []) {
     return _Packer2.pack(file, "arraybuffer", prettify2, overrides);
   }
+  /**
+   * Exports a document to a Node.js Stream.
+   *
+   * @param file - The document to export
+   * @param prettify - Whether to prettify the XML output
+   * @param overrides - Optional array of file overrides
+   * @returns A readable stream containing the document data
+   */
   static toStream(file, prettify2, overrides = []) {
     const stream2 = new streamBrowserifyExports.Stream();
     const zip2 = this.compiler.compile(file, convertPrettifyType(prettify2), overrides);
@@ -52503,7 +53185,7 @@ const _Packer = class _Packer2 {
     return stream2;
   }
 };
-__publicField2(_Packer, "compiler", new Compiler());
+__publicField(_Packer, "compiler", new Compiler());
 let Packer = _Packer;
 const emToHalfPoints = (em) => {
   const val = parseFloat((em == null ? void 0 : em.toString()) || "0");
@@ -52845,7 +53527,7 @@ electron.protocol.registerSchemesAsPrivileged([
 ]);
 async function createWindow() {
   win = new electron.BrowserWindow({
-    title: "PaperDraft",
+    title: "FirstDraft",
     icon: path.join(process.env.PUBLIC || "", "favicon.ico"),
     width: 1200,
     height: 800,
@@ -52863,7 +53545,6 @@ async function createWindow() {
   });
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(url);
-    win.webContents.openDevTools();
   } else {
     win.loadFile(indexHtml);
   }
@@ -53291,7 +53972,7 @@ electron.ipcMain.handle("open-preview-window", async (_2, { data, assets }) => {
       previewWin.focus();
     } else {
       previewWin = new electron.BrowserWindow({
-        title: "PaperDraft - Preview",
+        title: "FirstDraft - Preview",
         icon: path.join(process.env.PUBLIC || "", "favicon.ico"),
         width: 800,
         height: 1e3,

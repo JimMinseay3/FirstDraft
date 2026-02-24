@@ -50,7 +50,7 @@ protocol.registerSchemesAsPrivileged([
 
 async function createWindow() {
   win = new BrowserWindow({
-    title: 'PaperDraft',
+    title: 'FirstDraft',
     icon: join(process.env.PUBLIC || '', 'favicon.ico'),
     width: 1200,
     height: 800,
@@ -67,8 +67,6 @@ async function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) { // electron-vite-vue#298
     win.loadURL(url as string)
-    // Open devTool if the app is not packaged
-    win.webContents.openDevTools()
   } else {
     win.loadFile(indexHtml)
   }
@@ -168,7 +166,7 @@ ipcMain.handle('open-win', (_, arg) => {
   }
 })
 
-// PaperDraft IPC Handlers
+// FirstDraft IPC Handlers
 ipcMain.handle('load-paper', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ['openFile'],
@@ -628,7 +626,7 @@ ipcMain.handle('open-preview-window', async (_, { data, assets }) => {
       previewWin.focus()
     } else {
       previewWin = new BrowserWindow({
-        title: 'PaperDraft - Preview',
+        title: 'FirstDraft - Preview',
         icon: join(process.env.PUBLIC || '', 'favicon.ico'),
         width: 800,
         height: 1000,

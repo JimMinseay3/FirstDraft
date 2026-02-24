@@ -42,7 +42,7 @@ watch(currentLanguage, (newLang) => {
       <!-- About -->
       <div class="pt-6 border-t border-gray-200">
         <h3 class="text-sm font-medium text-gray-900">{{ t('settings.about') }}</h3>
-        <p class="mt-1 text-xs text-gray-500">PaperDraft v0.1.0</p>
+        <p class="mt-1 text-xs text-gray-500">FirstDraft v0.1.0</p>
       </div>
     </div>
   </div>

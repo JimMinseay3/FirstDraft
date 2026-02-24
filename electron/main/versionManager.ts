@@ -1,5 +1,5 @@
 import AdmZip from 'adm-zip';
-import { PaperData, VersionGraph, Branch, VersionNode, HistoryIndex } from '../../src/types/paper';
+import type { PaperData, VersionGraph, Branch, VersionNode, HistoryIndex } from '../../src/types/paper';
 
 const HISTORY_INDEX_PATH = 'history/index.json';
 const SNAPSHOTS_DIR = 'snapshots';
